@@ -1,8 +1,18 @@
+import { TelemetryWidgets } from '../../components/TelemetryWidgets';
+import { MapViewport } from '../../components/MapViewport';
+import { AlertFeed } from '../../components/AlertFeed';
+
 export default function Dashboard() {
   return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-4 text-white">Live Map (Головна)</h1>
-      <p className="text-gray-400">Тут буде інтерактивна карта інцидентів та лог загроз.</p>
+    <div className="flex-1 flex flex-col overflow-hidden h-full">
+      {/* Верхні віджети телеметрії (кількість нод, затримка, рівень шуму) */}
+      <TelemetryWidgets />
+
+      {/* Нижня частина: інтерактивна мапа та стрічка подій праворуч */}
+      <div className="flex-1 flex overflow-hidden w-full">
+        <MapViewport />
+        <AlertFeed />
+      </div>
     </div>
   );
 }
