@@ -1,15 +1,4 @@
-
-interface Alert {
-  id: string;
-  type: 'UAV' | 'Siren' | 'Explosion' | 'Generator';
-  timestamp: string;
-  confidence: number;
-  location: string;
-}
-
-interface AlertCardProps {
-  alert: Alert;
-}
+import type { Alert, AlertCardProps } from "../types/incidents";
 
 function AlertCard({ alert }: AlertCardProps) {
   const threatColors: Record<Alert['type'], string> = {

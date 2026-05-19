@@ -2,14 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Layers } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-
-interface IncidentMarker {
-  id: string;
-  lat: number; // Переходимо від відсотків Фігми до реальних гео-координат
-  lng: number;
-  type: 'UAV' | 'Explosion' | 'Siren' | 'Generator';
-  intensity: number;
-}
+import type { IncidentMarker } from '../types/incidents';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);

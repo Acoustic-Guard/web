@@ -1,9 +1,5 @@
 import { Map, BarChart3, Server } from 'lucide-react';
-
-interface NavigationProps {
-  activeView: string;
-  onViewChange: (view: string) => void;
-}
+import type { NavigationProps } from '../../types/navigation';
 
 export function Navigation({ activeView, onViewChange }: NavigationProps) {
   const navItems = [

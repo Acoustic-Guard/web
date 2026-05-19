@@ -1,12 +1,5 @@
 import { Activity, Zap, Radio } from 'lucide-react';
-
-interface MetricCardProps {
-  icon: React.ReactNode;
-  label: string;
-  value: string | number;
-  unit?: string;
-  status?: 'normal' | 'warning' | 'critical';
-}
+import type { MetricCardProps } from '../types/telemetry';
 
 function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
   const statusColors = {
