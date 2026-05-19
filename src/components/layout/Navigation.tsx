@@ -1,13 +1,7 @@
-import { Map, BarChart3, Server } from 'lucide-react';
+import { NAV_ITEMS } from '../../constants/navItems';
 import type { NavigationProps } from '../../types/navigation';
 
 export function Navigation({ activeView, onViewChange }: NavigationProps) {
-  const navItems = [
-    { id: 'map', label: 'Live Map', icon: Map },
-    { id: 'analytics', label: 'Analytics', icon: BarChart3 },
-    { id: 'settings', label: 'Network', icon: Server },
-  ];
-
   return (
     <nav className="w-16 bg-[#0a0a0f] border-r border-[#1a1a24] flex flex-col items-center py-6 gap-6">
       <div className="mb-4">
@@ -15,7 +9,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
           <span className="text-xs font-semibold text-white">AG</span>
         </div>
       </div>
-      {navItems.map((item) => {
+      {NAV_ITEMS.map((item) => {
         const Icon = item.icon;
         const isActive = activeView === item.id;
         return (

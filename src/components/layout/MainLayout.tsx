@@ -3,7 +3,7 @@ import { Navigation } from './Navigation';
 
 export default function MainLayout() {
   return (
-    <div className="flex min-h-screen bg-[#0a0a0f] text-white">
+    <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white">
       <Navigation activeView="map" onViewChange={() => {}} />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -13,7 +13,7 @@ export default function MainLayout() {
           <p className="text-xs text-[#71717a]">Distributed Urban Acoustic Monitoring System</p>
         </div>
 
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-hidden flex flex-col">
           <Outlet />
         </main>
       </div>
