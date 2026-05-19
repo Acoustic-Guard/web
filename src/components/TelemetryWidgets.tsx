@@ -1,27 +1,34 @@
-import { Activity, Zap, Radio } from 'lucide-react';
+import { Radio, Zap, Activity } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { useTelemetry } from '../hooks/useTelemetry';
 import type { MetricCardProps } from '../types/telemetry';
 
-function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
-  const statusColors = {
-    normal: 'text-emerald-400',
-    warning: 'text-amber-400',
-    critical: 'text-red-400',
-  };
+const METRIC_ICONS: LucideIcon[] = [Radio, Zap, Activity];
 
+type Status = 'normal' | 'warning' | 'critical';
+
+const STATUS_TEXT: Record<Status, string> = {
+  normal:   'bg-emerald-500/10 text-emerald-400',
+  warning:  'bg-amber-500/10 text-amber-400',
+  critical: 'bg-red-500/10 text-red-400',
+};
+const STATUS_VALUE: Record<Status, string> = {
+  normal:   'text-emerald-400',
+  warning:  'text-amber-400',
+  critical: 'text-red-400',
+};
+
+function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
   return (
     <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-4">
       <div className="flex items-start justify-between mb-3">
         <div className="text-[#71717a]">{icon}</div>
-        <div className={`text-xs px-2 py-0.5 rounded ${
-          status === 'normal' ? 'bg-emerald-500/10 text-emerald-400' :
-          status === 'warning' ? 'bg-amber-500/10 text-amber-400' :
-          'bg-red-500/10 text-red-400'
-        }`}>
+        <div className={`text-xs px-2 py-0.5 rounded ${STATUS_TEXT[status]}`}>
           {status.toUpperCase()}
         </div>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className={`text-2xl font-semibold ${statusColors[status]}`}>{value}</span>
+        <span className={`text-2xl font-semibold ${STATUS_VALUE[status]}`}>{value}</span>
         {unit && <span className="text-sm text-[#71717a]">{unit}</span>}
       </div>
       <div className="text-xs text-[#71717a] mt-1">{label}</div>
@@ -30,29 +37,35 @@ function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardP
 }
 
 export function TelemetryWidgets() {
+  const { metrics, loading, error } = useTelemetry();
+
+  if (loading) return (
+    <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-[#71717a]">
+      Завантаження телеметрії...
+    </div>
+  );
+
+  if (error) return (
+    <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-red-400">
+      Помилка: {error}
+    </div>
+  );
+
   return (
     <div className="grid grid-cols-3 gap-4 px-6 py-4 border-b border-[#1a1a24]">
-      <MetricCard
-        icon={<Radio size={16} />}
-        label="Active Sensor Nodes"
-        value={247}
-        unit="nodes"
-        status="normal"
-      />
-      <MetricCard
-        icon={<Zap size={16} />}
-        label="Avg. System Latency"
-        value={12}
-        unit="ms"
-        status="normal"
-      />
-      <MetricCard
-        icon={<Activity size={16} />}
-        label="Background Noise Level"
-        value={42}
-        unit="dB"
-        status="normal"
-      />
+      {metrics.map((metric, i) => {
+        const Icon = METRIC_ICONS[i];
+        return (
+          <MetricCard
+            key={metric.label}
+            icon={<Icon size={16} />}
+            label={metric.label}
+            value={metric.value}
+            unit={metric.unit}
+            status={metric.status}
+          />
+        );
+      })}
     </div>
   );
 }
