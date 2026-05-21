@@ -1,4 +1,4 @@
-import { API_CONFIG, ENDPOINTS } from '../api';
+import { API_CONFIG, ENDPOINTS } from '../config/api';
 import { mapApiTelemetry, type ApiTelemetry } from '../types/api';
 import type { MetricCardProps } from '../types/telemetry';
 

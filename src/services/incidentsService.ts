@@ -1,4 +1,4 @@
-import { API_CONFIG, ENDPOINTS } from '../api';
+import { API_CONFIG, ENDPOINTS } from '../config/api';
 import { incidents as mockIncidents } from '../mocks/incidentsMock';
 import { mapApiIncident, type ApiIncident } from '../types/api';
 import type { IncidentMarker } from '../types/incidents';

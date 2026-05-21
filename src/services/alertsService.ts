@@ -1,4 +1,4 @@
-import { API_CONFIG, ENDPOINTS } from '../api';
+import { API_CONFIG, ENDPOINTS } from '../config/api';
 import { alerts } from '../mocks/incidentsMock';
 
 import { mapApiAlert, type ApiAlert } from '../types/api';
