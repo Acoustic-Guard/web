@@ -4,7 +4,8 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useIncidents } from '../hooks/useIncidents';
 import { MARKER_COLORS, HEATMAP_RGB } from '../constants/ThreatColors';
-import { MAP_CONFIG, HEATMAP_CONFIG } from '../constants/MapConfig';
+import { HEATMAP_CONFIG, MAP_CONFIG } from '../constants/mapConfig';
+
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
