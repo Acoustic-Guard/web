@@ -2,15 +2,17 @@ import { useEffect, useRef, useState } from 'react';
 import { ZoomIn, ZoomOut, Layers } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.heat';
 import { useIncidents } from '../hooks/useIncidents';
-import { MARKER_COLORS, HEATMAP_RGB } from '../constants/ThreatColors';
-import { HEATMAP_CONFIG, MAP_CONFIG } from '../constants/mapConfig';
 
+import { MAP_CONFIG } from '../constants/mapConfig';
+import { MARKER_COLORS } from '../constants/ThreatColors';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const heatLayerRef = useRef<any>(null);
 
   const [showHeatmap, setShowHeatmap] = useState(true);
   const { incidents: incidentList } = useIncidents();
@@ -34,7 +36,7 @@ export function MapViewport() {
     return () => { map.remove(); };
   }, []);
 
-  // 2. Рендеринг маркерів
+  // 2. Маркери
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -49,7 +51,7 @@ export function MapViewport() {
         html: `
           <div class="relative w-3 h-3">
             <div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div>
-            <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5 transform scale-100 hover:scale-150 transition-transform"></div>
+            <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div>
           </div>
         `,
         iconSize: [12, 12],
@@ -57,9 +59,8 @@ export function MapViewport() {
       });
 
       const marker = L.marker([incident.lat, incident.lng], { icon: customIcon });
-
       marker.bindTooltip(`
-        <div class="bg-[#0a0a0f]/95 backdrop-blur-sm border border-[#1a1a24] rounded px-2 py-1 text-white text-xs">
+        <div class="bg-[#0a0a0f]/95 border border-[#1a1a24] rounded px-2 py-1 text-white text-xs">
           <div class="font-semibold">${incident.type}</div>
           <div class="text-[#71717a]">Confidence: ${Math.round(incident.intensity * 100)}%</div>
         </div>
@@ -71,52 +72,52 @@ export function MapViewport() {
     return () => { markersGroup.remove(); };
   }, [incidentList]);
 
-  // 3. Canvas-рендеринг теплової карти
+  // 3. leaflet-heat heatmap
   useEffect(() => {
     const map = mapRef.current;
-    const canvas = canvasRef.current;
-    if (!map || !canvas) return;
+    if (!map) return;
 
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
+    // Формат leaflet-heat: [lat, lng, intensity]
+    const heatPoints = incidentList.map((i) => [i.lat, i.lng, i.intensity]);
 
-    const drawHeatmap = () => {
-      const size = map.getSize();
-      canvas.width = size.x;
-      canvas.height = size.y;
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      if (!showHeatmap) return;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const heatLayer = (L as any).heatLayer(heatPoints, {
+      radius: 50,         // радіус впливу кожної точки в пікселях
+      blur: 35,           // розмиття — більше = плавніше
+      maxZoom: 13,        // при якому зумі точка має макс. інтенсивність
+      max: 1.0,           // максимальне значення intensity
+      gradient: {         // синій → зелений → жовтий → червоний
+        0.2: '#2563eb',
+        0.4: '#22c55e',
+        0.6: '#eab308',
+        0.8: '#f97316',
+        1.0: '#ef4444',
+      },
+    });
 
-      incidentList.forEach((incident) => {
-        const point = map.latLngToContainerPoint([incident.lat, incident.lng]);
-        const radius = HEATMAP_CONFIG.baseRadius * incident.intensity * (map.getZoom() / MAP_CONFIG.defaultZoom);
-        if (radius <= 0) return;
+    heatLayerRef.current = heatLayer;
 
-        const rgb = HEATMAP_RGB[incident.type];
-        const gradient = ctx.createRadialGradient(point.x, point.y, 0, point.x, point.y, radius);
-        gradient.addColorStop(0,   `rgba(${rgb}, 0.4)`);
-        gradient.addColorStop(0.5, `rgba(${rgb}, 0.1)`);
-        gradient.addColorStop(1,   'rgba(0, 0, 0, 0)');
+    if (showHeatmap) heatLayer.addTo(map);
 
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(point.x, point.y, radius, 0, Math.PI * 2);
-        ctx.fill();
-      });
-    };
+    return () => { heatLayer.remove(); };
+  }, [incidentList]);
 
-    drawHeatmap();
-    map.on('move zoom viewreset', drawHeatmap);
-    return () => {
-      map.off('move zoom viewreset', drawHeatmap);
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-    };
-  }, [showHeatmap, incidentList]);
+  // 4. Показ / приховування heatmap
+  useEffect(() => {
+    const map = mapRef.current;
+    const heatLayer = heatLayerRef.current;
+    if (!map || !heatLayer) return;
+
+    if (showHeatmap) {
+      heatLayer.addTo(map);
+    } else {
+      heatLayer.remove();
+    }
+  }, [showHeatmap]);
 
   return (
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
-      <canvas ref={canvasRef} className="absolute inset-0 pointer-events-none z-[400]" />
 
       <div className="absolute top-4 left-4 z-[500] flex gap-2">
         <button
