@@ -4,7 +4,7 @@ import { AlertFeed } from '../../components/AlertFeed';
 
 export default function Dashboard() {
   return (
-    <div className="flex-1 flex flex-col overflow-hidden h-full">
+    <div className="flex-1 min-h-0 flex flex-col overflow-hidden h-full">
       {/* Верхні віджети телеметрії (кількість нод, затримка, рівень шуму) */}
       <TelemetryWidgets />
 
