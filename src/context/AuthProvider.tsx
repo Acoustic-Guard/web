@@ -1,23 +1,59 @@
-import { useState, useCallback, type ReactNode } from 'react';
+import { useState, type ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
-import type { AuthUser } from '../types/auth';
-import { loginRequest, logoutRequest } from '../services/AuthService';
+
+import type { AuthUser, UserRole } from '../types/auth'; 
+import { ENDPOINTS, fetchWithAuth } from '../types/api';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AuthUser | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(() => {
+    const token = localStorage.getItem('jwt_token');
+    const username = localStorage.getItem('username');
+    const role = localStorage.getItem('role') as UserRole;
+    
 
-  const login = useCallback(async (username: string, password: string) => {
-    const authUser = await loginRequest(username, password);
-    setUser(authUser);
-  }, []);
+    if (token && username && role) {
+      return { username, role, token };
+    }
+    return null;
+  });
 
-  const logout = useCallback(() => {
-    logoutRequest();
+  const [loading, setLoading] = useState(false);
+
+  const login = async (username: string, pass: string) => {
+    setLoading(true);
+    try {
+      const res = await fetchWithAuth(ENDPOINTS.auth, {
+        method: 'POST',
+        body: JSON.stringify({ username, password: pass }),
+      });
+
+      if (!res.ok) {
+        throw new Error('Невірний логін або пароль');
+      }
+
+      const data = await res.json();
+      const role = data.role as UserRole;
+      
+      setUser({ username: data.username, role, token: data.token });
+      localStorage.setItem('jwt_token', data.token);
+      localStorage.setItem('username', data.username);
+      localStorage.setItem('role', role);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
     setUser(null);
-  }, []);
+    localStorage.removeItem('jwt_token');
+    localStorage.removeItem('username');
+    localStorage.removeItem('role');
+  };
 
+  const isAdmin = user?.role === 'ADMIN';
+  
   return (
-    <AuthContext.Provider value={{ user, isAdmin: user?.role === 'admin', login, logout }}>
+    <AuthContext.Provider value={{ user, isAdmin, loading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
