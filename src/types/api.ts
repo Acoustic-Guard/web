@@ -1,43 +1,6 @@
 import type { Alert, IncidentMarker } from './incidents';
 import type { MetricCardProps } from './telemetry';
 
-export const API_CONFIG = {
-  BASE_URL: 'http://localhost:8080',
-  WS_URL: 'ws://localhost:8080/ws',
-};
-
-export const ENDPOINTS = {
-  auth: '/api/auth/login',
-  alerts: '/api/alerts',
-  telemetry: '/api/v1/telemetry',
-  incidents: '/api/incidents',
-};
-
-export async function fetchWithAuth(endpoint: string, options: RequestInit = {}) {
-  const token = localStorage.getItem('jwt_token');
-  
-  const headers = new Headers(options.headers);
-  headers.set('Content-Type', 'application/json');
-  
-  if (token) {
-    headers.set('Authorization', `Bearer ${token}`);
-  }
-
-  const response = await fetch(`${API_CONFIG.BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
-
-  if (response.status === 401) {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    window.location.href = '/';
-  }
-
-  return response;
-}
-
 // ─── Типи, які поверне бекенд (Java DTO → JSON) ───────────────────────────────
 // Якщо бекенд змінить поле — виправляємо тут і в mapper'і, компоненти не чіпаємо.
 
