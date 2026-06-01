@@ -1,8 +1,7 @@
 import { useState, type ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
-
 import type { AuthUser, UserRole } from '../types/auth'; 
-import { ENDPOINTS, fetchWithAuth } from '../types/api';
+import { loginRequest } from '../services/AuthService';
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
@@ -10,7 +9,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const username = localStorage.getItem('username');
     const role = localStorage.getItem('role') as UserRole;
     
-
     if (token && username && role) {
       return { username, role, token };
     }
@@ -22,20 +20,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (username: string, pass: string) => {
     setLoading(true);
     try {
-      const res = await fetchWithAuth(ENDPOINTS.auth, {
-        method: 'POST',
-        body: JSON.stringify({ username, password: pass }),
-      });
-
-      if (!res.ok) {
-        throw new Error('Невірний логін або пароль');
-      }
-
-      const data = await res.json();
+      const data = await loginRequest(username, pass);
       const role = data.role as UserRole;
       
       setUser({ username: data.username, role, token: data.token });
-      localStorage.setItem('jwt_token', data.token);
+      
+      if (data.token) {
+        localStorage.setItem('jwt_token', data.token);
+      }
       localStorage.setItem('username', data.username);
       localStorage.setItem('role', role);
     } finally {
