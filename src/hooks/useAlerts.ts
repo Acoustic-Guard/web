@@ -28,7 +28,12 @@ export function useAlerts(): UseAlertsResult {
 
   // Нові алерти через WebSocket — додаємо на початок списку
   const handleNewAlert = useCallback((alert: Alert) => {
-    setAlerts((prev) => [alert, ...prev]);
+    setAlerts((prev) => {
+      if (prev.some((a) => a.id === alert.id)) {
+        return prev; // Prevent duplicate injection
+      }
+      return [alert, ...prev];
+    });
   }, []);
 
   useAlertStream({ onAlert: handleNewAlert });

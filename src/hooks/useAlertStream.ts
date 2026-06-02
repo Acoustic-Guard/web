@@ -1,9 +1,8 @@
 import { useEffect, useRef} from 'react';
 
-import { Client } from '@stomp/stompjs';
-
 import { mapApiAlert, type ApiAlert } from '../types/api';
-import { API_CONFIG, WS_TOPICS } from '../config/api';
+import { WS_TOPICS } from '../config/api';
+import { ensureConnected, getStompClient } from '../services/stompClient';
 import type { Alert } from '../types/incidents';
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
@@ -60,27 +59,25 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
       return () => clearInterval(interval);
     }
 
-    const token = localStorage.getItem('jwt_token');
-    
-    const client = new Client({
-      brokerURL: API_CONFIG.WS_URL,
-      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
-      onConnect: () => {
-        console.log('[useAlertStream] Connected to STOMP');
-        client.subscribe(WS_TOPICS.alerts, (message) => {
-          const raw: ApiAlert = JSON.parse(message.body);
-          onAlertRef.current(mapApiAlert(raw));
-        });
-      },
-      onStompError: (frame) => {
-        console.error('Broker reported error: ' + frame.headers['message']);
-        console.error('Additional details: ' + frame.body);
-      },
+    const subscriptionRef = { current: null as any };
+
+    ensureConnected().then(() => {
+      const client = getStompClient();
+      console.log('[useAlertStream] Connected to STOMP');
+      
+      subscriptionRef.current = client.subscribe(WS_TOPICS.alerts, (message) => {
+        const raw: ApiAlert = JSON.parse(message.body);
+        onAlertRef.current(mapApiAlert(raw));
+      });
+    }).catch((err) => {
+      console.error('[useAlertStream] Failed to connect:', err);
     });
 
-    client.activate();
     return () => {
-      client.deactivate();
+      if (subscriptionRef.current) {
+        subscriptionRef.current.unsubscribe();
+        subscriptionRef.current = null;
+      }
     };
   }, []); // залежностей немає — WS-з'єднання відкривається один раз
 }
