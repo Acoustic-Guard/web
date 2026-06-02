@@ -4,10 +4,10 @@ export const API_CONFIG = {
 } as const;
 
 export const ENDPOINTS = {
-  auth: '/api/auth/login',
-  alerts: '/api/alerts',
-  telemetry: '/api/telemetry',
-  incidents: '/api/incidents',
+  auth: '/auth/login',
+  alerts: '/alerts',
+  telemetry: '/telemetry',
+  incidents: '/incidents',
 } as const;
 
 export const WS_TOPICS = {

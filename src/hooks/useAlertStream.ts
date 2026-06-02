@@ -1,9 +1,12 @@
 import { useEffect, useRef} from 'react';
 
+import { Client } from '@stomp/stompjs';
+
 import { mapApiAlert, type ApiAlert } from '../types/api';
+import { API_CONFIG, WS_TOPICS } from '../config/api';
 import type { Alert } from '../types/incidents';
 
-const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.DEV;
+const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 interface UseAlertStreamOptions {
   onAlert: (alert: Alert) => void;
@@ -57,7 +60,27 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
       return () => clearInterval(interval);
     }
 
-    // TODO: STOMP — замінити на реальне підключення (інструкція вище)
-    console.warn('[useAlertStream] WebSocket не підключено. IS_MOCK=false, але STOMP ще не реалізовано.');
+    const token = localStorage.getItem('jwt_token');
+    
+    const client = new Client({
+      brokerURL: API_CONFIG.WS_URL,
+      connectHeaders: token ? { Authorization: `Bearer ${token}` } : {},
+      onConnect: () => {
+        console.log('[useAlertStream] Connected to STOMP');
+        client.subscribe(WS_TOPICS.alerts, (message) => {
+          const raw: ApiAlert = JSON.parse(message.body);
+          onAlertRef.current(mapApiAlert(raw));
+        });
+      },
+      onStompError: (frame) => {
+        console.error('Broker reported error: ' + frame.headers['message']);
+        console.error('Additional details: ' + frame.body);
+      },
+    });
+
+    client.activate();
+    return () => {
+      client.deactivate();
+    };
   }, []); // залежностей немає — WS-з'єднання відкривається один раз
 }

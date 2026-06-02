@@ -1,9 +1,9 @@
-import { API_CONFIG, ENDPOINTS } from '../config/api';
+import { fetchWithAuth, ENDPOINTS } from '../config/api';
 import { incidents as mockIncidents } from '../mocks/incidentsMock';
 import { mapApiIncident, type ApiIncident } from '../types/api';
 import type { IncidentMarker } from '../types/incidents';
 
-const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true' || import.meta.env.DEV;
+const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
 export async function getIncidents(): Promise<IncidentMarker[]> {
   if (IS_MOCK) {
@@ -11,7 +11,7 @@ export async function getIncidents(): Promise<IncidentMarker[]> {
     return mockIncidents;
   }
 
-  const res = await fetch(`${API_CONFIG.BASE_URL}${ENDPOINTS.incidents}`);
+  const res = await fetchWithAuth(ENDPOINTS.incidents);
   if (!res.ok) throw new Error(`Incidents fetch failed: ${res.status}`);
 
   const data: ApiIncident[] = await res.json();

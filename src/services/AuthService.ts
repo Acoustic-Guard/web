@@ -2,7 +2,7 @@ import { API_CONFIG, ENDPOINTS } from '../config/api';
 import { MOCK_CREDENTIALS } from '../config/auth';
 import type { AuthUser } from '../types/auth';
 
-const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+const IS_MOCK = false;
 
 export async function loginRequest(username: string, password: string): Promise<AuthUser & { token?: string }> {
   if (IS_MOCK) {
