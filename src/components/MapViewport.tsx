@@ -100,7 +100,7 @@ export function MapViewport() {
     if (showHeatmap) heatLayer.addTo(map);
 
     return () => { heatLayer.remove(); };
-  }, [incidentList]);
+  }, [incidentList, showHeatmap]);
 
   // 4. Показ / приховування heatmap
   useEffect(() => {
@@ -119,7 +119,7 @@ export function MapViewport() {
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      <div className="absolute top-4 left-4 z-[500] flex gap-2">
+      <div className="absolute top-4 left-4 z-500 flex gap-2">
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
@@ -131,7 +131,7 @@ export function MapViewport() {
         </button>
       </div>
 
-      <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-500 flex flex-col gap-2">
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors">
           <ZoomIn size={18} />
         </button>
@@ -140,7 +140,7 @@ export function MapViewport() {
         </button>
       </div>
 
-      <div className="absolute bottom-4 left-4 z-[500] bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3">
+      <div className="absolute bottom-4 left-4 z-500 bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3">
         <div className="text-xs text-[#71717a] mb-2">Map Legend</div>
         <div className="space-y-1.5">
           {[
