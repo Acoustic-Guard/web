@@ -34,6 +34,7 @@ export function MapViewport() {
 
   useIncidentStream({
     onIncident: (newIncident) => {
+      if (resolvedIds.has(newIncident.id)) return;
       setWsIncidents((prev) => {
         const exists = prev.some((i) => i.id === newIncident.id);
         if (exists) {
@@ -52,14 +53,16 @@ export function MapViewport() {
 
   const liveIncidents = useMemo(() => {
     const merged = [...initialIncidents];
+    
     wsIncidents.forEach((wsInc) => {
       const idx = merged.findIndex(i => i.id === wsInc.id);
       if (idx !== -1) merged[idx] = wsInc;
       else merged.push(wsInc);
     });
+
     return merged.filter(i => 
       !resolvedIds.has(i.id) && 
-      i.status !== 'Resolved' // Фільтруємо за статусом, що приходить з бекенду
+      i.status !== 'Resolved'
     );
   }, [initialIncidents, wsIncidents, resolvedIds]);
 
