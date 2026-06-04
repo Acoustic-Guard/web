@@ -17,3 +17,17 @@ export async function getIncidents(): Promise<IncidentMarker[]> {
   const data: ApiIncident[] = await res.json();
   return data.map(mapApiIncident);
 }
+
+export async function updateIncidentStatus(id: string, status: string): Promise<void> {
+  if (IS_MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return;
+  }
+
+  const res = await fetchWithAuth(`${ENDPOINTS.incidents}/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(status),
+  });
+
+  if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
+}
