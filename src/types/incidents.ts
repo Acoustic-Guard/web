@@ -3,8 +3,7 @@ export interface IncidentMarker {
 
   id: string;
 
-  lat: number; // Переходимо від відсотків Фігми до реальних гео-координат
-
+  lat: number;
   lng: number;
 
   type: 'UAV' | 'Explosion' | 'Siren' | 'Generator';

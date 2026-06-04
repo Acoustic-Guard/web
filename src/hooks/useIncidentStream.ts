@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef} from 'react';
 
 import { mapApiIncident, type ApiIncident } from '../types/api';
