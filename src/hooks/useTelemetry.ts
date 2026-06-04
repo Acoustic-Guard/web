@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getTelemetry } from '../services/telemetryService';
+import { useAuth } from './useAuth';
 import type { MetricCardProps } from '../types/telemetry';
 
 interface UseTelemetryResult {
@@ -9,6 +10,7 @@ interface UseTelemetryResult {
 }
 
 export function useTelemetry(): UseTelemetryResult {
+  const { user } = useAuth();
   const [metrics, setMetrics] = useState<MetricCardProps[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
@@ -16,23 +18,36 @@ export function useTelemetry(): UseTelemetryResult {
   useEffect(() => {
     let cancelled = false;
 
-    getTelemetry()
-      .then((data) => { if (!cancelled) setMetrics(data); })
-      .catch((err) => { if (!cancelled) setError(err.message); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+    const fetchInitialTelemetry = () => {
+      getTelemetry()
+        .then((data) => { 
+          if (!cancelled) {
+            setMetrics(data); 
+            setError(null);
+          }
+        })
+        .catch((err) => { if (!cancelled) setError(err.message); })
+        .finally(() => { if (!cancelled) setLoading(false); });
+    };
 
-    // Оновлення телеметрії кожні 30 секунд (як polling-fallback до WebSocket)
+    fetchInitialTelemetry();
+
     const interval = setInterval(() => {
       getTelemetry()
-        .then((data) => { if (!cancelled) setMetrics(data); })
-        .catch(() => {}); // тихо ігноруємо помилки при оновленні
+        .then((data) => { 
+          if (!cancelled) {
+            setMetrics(data);
+            setError(null);
+          }
+        })
+        .catch(() => {});
     }, 30_000);
 
     return () => {
       cancelled = true;
       clearInterval(interval);
     };
-  }, []);
+  }, [user]);
 
   return { metrics, loading, error };
 }
