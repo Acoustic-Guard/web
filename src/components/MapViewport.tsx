@@ -1,50 +1,25 @@
-<<<<<<< HEAD
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { ZoomIn, ZoomOut, Layers, X, CheckCircle } from 'lucide-react';
-=======
-import { useEffect, useRef, useState } from 'react';
-
-import { ZoomIn, ZoomOut, Layers } from 'lucide-react';
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
 import L from 'leaflet';
-
 import 'leaflet/dist/leaflet.css';
-
 import 'leaflet.heat';
-<<<<<<< HEAD
 
 import { useIncidents } from '../hooks/useIncidents';
 import { useIncidentStream } from '../hooks/useIncidentStream';
 import { updateIncidentStatus } from '../services/incidentsService';
-=======
-
-import { useIncidents } from '../hooks/useIncidents';
-
-
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
 import { MAP_CONFIG } from '../constants/mapConfig';
-
 import { MARKER_COLORS } from '../constants/ThreatColors';
 
-
-
 export function MapViewport() {
-
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
   const mapRef = useRef<L.Map | null>(null);
-
+  
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
   const heatLayerRef = useRef<any>(null);
 
-
-
   const [showHeatmap, setShowHeatmap] = useState(true);
-<<<<<<< HEAD
   
+  // Стани для панелі оператора
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
@@ -63,225 +38,139 @@ export function MapViewport() {
         }
         return [...prev, newIncident];
       });
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      setSelectedIncident((current: any) => {
+        if (current && current.id === newIncident.id) return newIncident;
+        return current;
+      });
     }
   });
 
   const liveIncidents = useMemo(() => {
     const merged = [...initialIncidents];
-    
     wsIncidents.forEach((wsInc) => {
       const idx = merged.findIndex(i => i.id === wsInc.id);
-      if (idx !== -1) {
-        merged[idx] = wsInc;
-      } else {
-        merged.push(wsInc);
-      }
+      if (idx !== -1) merged[idx] = wsInc;
+      else merged.push(wsInc);
     });
-    
     return merged.filter(i => !resolvedIds.has(i.id));
   }, [initialIncidents, wsIncidents, resolvedIds]);
-=======
 
-  const { incidents: incidentList } = useIncidents();
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
-
-
-
-  // 1. Ініціалізація карти
-
+  // 1. Ініціалізація карти з жорстким очищенням пам'яті (захист від StrictMode)
   useEffect(() => {
-
-    if (!mapContainerRef.current) return;
-
-
+    if (!mapContainerRef.current || mapRef.current) return;
 
     const map = L.map(mapContainerRef.current, {
-
       center: MAP_CONFIG.center,
-
       zoom: MAP_CONFIG.defaultZoom,
-
       zoomControl: false,
-
     });
 
-
-
     L.tileLayer(MAP_CONFIG.tileUrl, {
-
       attribution: MAP_CONFIG.tileAttribution,
-
       maxZoom: MAP_CONFIG.maxZoom,
-
     }).addTo(map);
-
-
 
     mapRef.current = map;
 
-    return () => { map.remove(); };
-
+    return () => { 
+      if (heatLayerRef.current) {
+        map.removeLayer(heatLayerRef.current);
+      }
+      map.remove(); 
+      mapRef.current = null;
+      heatLayerRef.current = null;
+    };
   }, []);
 
-
-
-  // 2. Маркери
-
+  // 2. Блискавичні маркери (Без збереження у useRef)
   useEffect(() => {
-
     const map = mapRef.current;
-
     if (!map) return;
 
-
-
+    // Створюємо нову групу при кожній зміні (це швидко і не залишає "фантомних" точок)
     const markersGroup = L.layerGroup().addTo(map);
 
-<<<<<<< HEAD
     liveIncidents.forEach((incident) => {
       const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
-=======
-
-
-    incidentList.forEach((incident) => {
-
-      const colorClass = MARKER_COLORS[incident.type];
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
-
-
 
       const customIcon = L.divIcon({
-<<<<<<< HEAD
         className: 'custom-div-icon cursor-pointer',
-=======
-
-        className: 'custom-div-icon',
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
         html: `
-
           <div class="relative w-3 h-3">
-
             <div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div>
-
             <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div>
-
           </div>
-
         `,
-
         iconSize: [12, 12],
-
         iconAnchor: [6, 6],
-
       });
 
-
-
       const marker = L.marker([incident.lat, incident.lng], { icon: customIcon });
-<<<<<<< HEAD
       
-=======
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
       marker.bindTooltip(`
-
         <div class="bg-[#0a0a0f]/95 border border-[#1a1a24] rounded px-2 py-1 text-white text-xs">
-
           <div class="font-semibold">${incident.type}</div>
-<<<<<<< HEAD
           <div class="text-[#71717a]">Клікніть для управління</div>
-=======
-
-          <div class="text-[#71717a]">Confidence: ${Math.round(incident.intensity * 100)}%</div>
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
         </div>
-
       `, { direction: 'top', className: 'leaflet-custom-tooltip', opacity: 1 });
 
-<<<<<<< HEAD
       marker.on('click', () => {
         setSelectedIncident(incident);
       });
-=======
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
 
       markersGroup.addLayer(marker);
-
     });
 
-
-
-    return () => { markersGroup.remove(); };
-<<<<<<< HEAD
+    return () => { 
+      markersGroup.remove(); 
+    };
   }, [liveIncidents]);
 
-  // 3. Теплова карта
-=======
-
-  }, [incidentList]);
-
-
-
-  // 3. leaflet-heat heatmap
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
+  // 3. Оптимізована теплова карта
   useEffect(() => {
-
     const map = mapRef.current;
-
     if (!map) return;
 
-<<<<<<< HEAD
-    let animationFrameId: number;
-
-    const renderHeatmap = () => {
-     const size = map.getSize();
-      if (size.x === 0 || size.y === 0) {
-        animationFrameId = requestAnimationFrame(renderHeatmap);
-        return;
-      }
-
-      if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
+    if (!showHeatmap || liveIncidents.length === 0) {
+      if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
+        heatLayerRef.current = null;
       }
+      return;
+    }
 
-      if (showHeatmap && liveIncidents.length > 0) {
-        const heatPoints = liveIncidents.map((i) => [i.lat, i.lng, i.intensity]);
-        
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const heatLayer = (L as any).heatLayer(heatPoints, {
-          radius: 50,
-          blur: 35,
-          maxZoom: 13,
-          max: 1.0,
-          gradient: {
-            0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444',
-          },
-        });
+    const heatPoints = liveIncidents.map((i) => [i.lat, i.lng, i.intensity]);
 
-        heatLayer.addTo(map);
-        heatLayerRef.current = heatLayer;
-      }
-    };
+    if (!heatLayerRef.current) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      heatLayerRef.current = (L as any).heatLayer(heatPoints, {
+        radius: 50, blur: 35, maxZoom: 13, max: 1.0,
+        gradient: { 0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444' },
+      });
 
-    renderHeatmap();
-
-    return () => {
-      cancelAnimationFrame(animationFrameId);
-      if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
-        map.removeLayer(heatLayerRef.current);
-      }
-    };
+      const tryAdd = () => {
+        if (!mapRef.current) return;
+        const size = map.getSize();
+        if (size.x === 0 || size.y === 0) {
+          requestAnimationFrame(tryAdd);
+        } else if (heatLayerRef.current && !map.hasLayer(heatLayerRef.current)) {
+          heatLayerRef.current.addTo(map);
+        }
+      };
+      tryAdd();
+    } else {
+      heatLayerRef.current.setLatLngs(heatPoints);
+    }
   }, [liveIncidents, showHeatmap]);
 
   const handleResolve = async () => {
     if (!selectedIncident) return;
     setIsResolving(true);
     try {
-      await updateIncidentStatus(selectedIncident.id, 'RESOLVED');
+      // КЛЮЧОВИЙ ФІКС: Відправляємо "Resolved" з точністю до регістра
+      await updateIncidentStatus(selectedIncident.id, 'Resolved');
       
       setResolvedIds((prev) => {
         const newSet = new Set(prev);
@@ -297,92 +186,11 @@ export function MapViewport() {
       setIsResolving(false);
     }
   };
-=======
-
-
-    // Формат leaflet-heat: [lat, lng, intensity]
-
-    const heatPoints = incidentList.map((i) => [i.lat, i.lng, i.intensity]);
-
-
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-
-    const heatLayer = (L as any).heatLayer(heatPoints, {
-
-      radius: 50,         // радіус впливу кожної точки в пікселях
-
-      blur: 35,           // розмиття — більше = плавніше
-
-      maxZoom: 13,        // при якому зумі точка має макс. інтенсивність
-
-      max: 1.0,           // максимальне значення intensity
-
-      gradient: {         // синій → зелений → жовтий → червоний
-
-        0.2: '#2563eb',
-
-        0.4: '#22c55e',
-
-        0.6: '#eab308',
-
-        0.8: '#f97316',
-
-        1.0: '#ef4444',
-
-      },
-
-    });
-
-
-
-    heatLayerRef.current = heatLayer;
-
-
-
-    if (showHeatmap) heatLayer.addTo(map);
-
-
-
-    return () => { heatLayer.remove(); };
-
-  }, [incidentList]);
-
-
-
-  // 4. Показ / приховування heatmap
-
-  useEffect(() => {
-
-    const map = mapRef.current;
-
-    const heatLayer = heatLayerRef.current;
-
-    if (!map || !heatLayer) return;
-
-
-
-    if (showHeatmap) {
-
-      heatLayer.addTo(map);
-
-    } else {
-
-      heatLayer.remove();
-
-    }
-
-  }, [showHeatmap]);
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
-
-
 
   return (
-<<<<<<< HEAD
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full min-w-[100px] min-h-[100px]">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* ПАНЕЛЬ ОПЕРАТОРА (З'являється при кліку на маркер) */}
       {selectedIncident && (
         <div className="absolute top-4 right-16 z-[600] w-72 bg-[#0a0a0f]/95 backdrop-blur-md border border-[#1a1a24] rounded-xl p-4 shadow-2xl">
           <div className="flex justify-between items-start mb-4">
@@ -424,96 +232,43 @@ export function MapViewport() {
         </div>
       )}
 
-      {/* ЗВИЧАЙНІ ВІДЖЕТИ КАРТИ */}
-=======
-
-    <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full">
-
-      <div ref={mapContainerRef} className="w-full h-full z-0" />
-
-
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
       <div className="absolute top-4 left-4 z-[500] flex gap-2">
-
         <button
-
           onClick={() => setShowHeatmap(!showHeatmap)}
-
           className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-
             showHeatmap ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
-
           }`}
-
         >
-
           <Layers size={14} />
-
           Heatmap
-
         </button>
-
       </div>
-
-
 
       <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
-
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors">
-
           <ZoomIn size={18} />
-
         </button>
-
         <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors">
-
           <ZoomOut size={18} />
-
         </button>
-
       </div>
 
-<<<<<<< HEAD
       <div className="absolute bottom-4 left-4 z-[500] bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3 pointer-events-none">
-=======
-
-
-      <div className="absolute bottom-4 left-4 z-[500] bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3">
-
->>>>>>> 766fb1d5eaa99063e340f60fbd8cd47981197685
         <div className="text-xs text-[#71717a] mb-2">Map Legend</div>
-
         <div className="space-y-1.5">
-
           {[
-
             { color: 'bg-red-500',    label: 'UAV Detected' },
-
             { color: 'bg-red-600',    label: 'Explosion'    },
-
             { color: 'bg-amber-500',  label: 'Siren'        },
-
             { color: 'bg-yellow-500', label: 'Generator'    },
-
           ].map(({ color, label }) => (
-
             <div key={label} className="flex items-center gap-2">
-
               <div className={`w-2 h-2 ${color} rounded-full`}></div>
-
               <span className="text-xs text-white">{label}</span>
-
             </div>
-
           ))}
-
         </div>
-
       </div>
-
     </div>
-
   );
-
 }
