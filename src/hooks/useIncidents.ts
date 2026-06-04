@@ -9,6 +9,8 @@ interface UseIncidentsResult {
   error:     string | null;
 }
 
+const MAX_INCIDENTS = 500;
+
 export function useIncidents(): UseIncidentsResult {
   const [incidents, setIncidents] = useState<IncidentMarker[]>([]);
   const [loading, setLoading]     = useState(true);
@@ -18,13 +20,13 @@ export function useIncidents(): UseIncidentsResult {
     setIncidents((prev) => {
       const index = prev.findIndex((inc) => inc.id === newIncident.id);
       if (index !== -1) {
-        // Update existing incident
+        // Оновлюємо існуючий інцидент
         const updated = [...prev];
         updated[index] = newIncident;
         return updated;
       } else {
-        // Append new incident
-        return [...prev, newIncident];
+        // Додаємо новий та зберігаємо лише останні MAX_INCIDENTS
+        return [...prev, newIncident].slice(-MAX_INCIDENTS);
       }
     });
   }, []);
@@ -33,7 +35,10 @@ export function useIncidents(): UseIncidentsResult {
     let cancelled = false;
 
     getIncidents()
-      .then((data) => { if (!cancelled) setIncidents(data); })
+      .then((data) => { if (!cancelled){
+        const activeOnly = data.filter(inc => inc.status !== 'Resolved');
+        setIncidents(activeOnly); 
+      } })
       .catch((err) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
