@@ -1,4 +1,5 @@
 export interface IncidentMarker {
+  status: string;
 
   id: string;
 
