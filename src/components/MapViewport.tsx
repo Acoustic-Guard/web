@@ -1,10 +1,11 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useMemo } from 'react';
 import { ZoomIn, ZoomOut, Layers } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
-import { useIncidents } from '../hooks/useIncidents';
 
+import { useIncidents } from '../hooks/useIncidents';
+import { useIncidentStream } from '../hooks/useIncidentStream';
 import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
 
@@ -15,7 +16,43 @@ export function MapViewport() {
   const heatLayerRef = useRef<any>(null);
 
   const [showHeatmap, setShowHeatmap] = useState(true);
-  const { incidents: incidentList } = useIncidents();
+  
+  // 1. Отримуємо статичні дані з REST API
+  const { incidents: initialIncidents } = useIncidents();
+  
+  // 2. Стан ТІЛЬКИ для свіжих точок з веб-сокетів
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const [wsIncidents, setWsIncidents] = useState<any[]>([]);
+
+  // 3. Слухаємо веб-сокети
+  useIncidentStream({
+    onIncident: (newIncident) => {
+      setWsIncidents((prev) => {
+        const exists = prev.some((i) => i.id === newIncident.id);
+        if (exists) {
+          return prev.map((i) => (i.id === newIncident.id ? newIncident : i));
+        }
+        return [...prev, newIncident];
+      });
+    }
+  });
+
+  // 4. ДИНАМІЧНЕ ОБ'ЄДНАННЯ (Вирішує помилку ESLint)
+  // Ми зливаємо initialIncidents та wsIncidents разом без використання useEffect
+  const liveIncidents = useMemo(() => {
+    const merged = [...initialIncidents];
+    
+    wsIncidents.forEach((wsInc) => {
+      const idx = merged.findIndex(i => i.id === wsInc.id);
+      if (idx !== -1) {
+        merged[idx] = wsInc; // Оновлюємо існуючу точку
+      } else {
+        merged.push(wsInc); // Додаємо нову точку
+      }
+    });
+    
+    return merged;
+  }, [initialIncidents, wsIncidents]);
 
   // 1. Ініціалізація карти
   useEffect(() => {
@@ -36,15 +73,16 @@ export function MapViewport() {
     return () => { map.remove(); };
   }, []);
 
-  // 2. Маркери
+  // 2. Маркери (використовуємо liveIncidents замість incidentList)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
     const markersGroup = L.layerGroup().addTo(map);
 
-    incidentList.forEach((incident) => {
-      const colorClass = MARKER_COLORS[incident.type];
+    liveIncidents.forEach((incident) => {
+      // Додаємо fallback колір на випадок, якщо тип загрози невідомий
+      const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
 
       const customIcon = L.divIcon({
         className: 'custom-div-icon',
@@ -70,56 +108,60 @@ export function MapViewport() {
     });
 
     return () => { markersGroup.remove(); };
-  }, [incidentList]);
+  }, [liveIncidents]);
 
   // 3. leaflet-heat heatmap
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Формат leaflet-heat: [lat, lng, intensity]
-    const heatPoints = incidentList.map((i) => [i.lat, i.lng, i.intensity]);
+    let animationFrameId: number;
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const heatLayer = (L as any).heatLayer(heatPoints, {
-      radius: 50,         // радіус впливу кожної точки в пікселях
-      blur: 35,           // розмиття — більше = плавніше
-      maxZoom: 13,        // при якому зумі точка має макс. інтенсивність
-      max: 1.0,           // максимальне значення intensity
-      gradient: {         // синій → зелений → жовтий → червоний
-        0.2: '#2563eb',
-        0.4: '#22c55e',
-        0.6: '#eab308',
-        0.8: '#f97316',
-        1.0: '#ef4444',
-      },
-    });
+    const renderHeatmap = () => {
+     const size = map.getSize();
+      if (size.x === 0 || size.y === 0) {
+        animationFrameId = requestAnimationFrame(renderHeatmap);
+        return;
+      }
 
-    heatLayerRef.current = heatLayer;
+      if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
+        map.removeLayer(heatLayerRef.current);
+      }
 
-    if (showHeatmap) heatLayer.addTo(map);
+      if (showHeatmap && liveIncidents.length > 0) {
+        const heatPoints = liveIncidents.map((i) => [i.lat, i.lng, i.intensity]);
+        
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const heatLayer = (L as any).heatLayer(heatPoints, {
+          radius: 50,
+          blur: 35,
+          maxZoom: 13,
+          max: 1.0,
+          gradient: {
+            0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444',
+          },
+        });
 
-    return () => { heatLayer.remove(); };
-  }, [incidentList, showHeatmap]);
+        heatLayer.addTo(map);
+        heatLayerRef.current = heatLayer;
+      }
+    };
 
-  // 4. Показ / приховування heatmap
-  useEffect(() => {
-    const map = mapRef.current;
-    const heatLayer = heatLayerRef.current;
-    if (!map || !heatLayer) return;
+    renderHeatmap();
 
-    if (showHeatmap) {
-      heatLayer.addTo(map);
-    } else {
-      heatLayer.remove();
-    }
-  }, [showHeatmap]);
+    return () => {
+      cancelAnimationFrame(animationFrameId);
+      if (heatLayerRef.current && map.hasLayer(heatLayerRef.current)) {
+        map.removeLayer(heatLayerRef.current);
+      }
+    };
+  }, [liveIncidents, showHeatmap]);
 
   return (
-    <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full">
+    <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full min-w-[100px] min-h-[100px]">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      <div className="absolute top-4 left-4 z-500 flex gap-2">
+      <div className="absolute top-4 left-4 z-[500] flex gap-2">
         <button
           onClick={() => setShowHeatmap(!showHeatmap)}
           className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
@@ -131,7 +173,7 @@ export function MapViewport() {
         </button>
       </div>
 
-      <div className="absolute top-4 right-4 z-500 flex flex-col gap-2">
+      <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors">
           <ZoomIn size={18} />
         </button>
@@ -140,7 +182,7 @@ export function MapViewport() {
         </button>
       </div>
 
-      <div className="absolute bottom-4 left-4 z-500 bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3">
+      <div className="absolute bottom-4 left-4 z-[500] bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3">
         <div className="text-xs text-[#71717a] mb-2">Map Legend</div>
         <div className="space-y-1.5">
           {[
