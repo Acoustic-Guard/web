@@ -21,11 +21,10 @@ export function useTelemetry(): UseTelemetryResult {
       .catch((err) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
-    // Оновлення телеметрії кожні 30 секунд (як polling-fallback до WebSocket)
     const interval = setInterval(() => {
       getTelemetry()
         .then((data) => { if (!cancelled) setMetrics(data); })
-        .catch(() => {}); // тихо ігноруємо помилки при оновленні
+        .catch(() => {});
     }, 30_000);
 
     return () => {
