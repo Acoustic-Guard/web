@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef, useState, useMemo } from 'react';
 import { ZoomIn, ZoomOut, Layers, X, CheckCircle } from 'lucide-react';
 import L from 'leaflet';
@@ -16,6 +17,8 @@ export function MapViewport() {
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
+
+  const markersGroupRef = useRef<L.LayerGroup | null>(null);
 
   const [showHeatmap, setShowHeatmap] = useState(true);
   
@@ -36,7 +39,7 @@ export function MapViewport() {
         if (exists) {
           return prev.map((i) => (i.id === newIncident.id ? newIncident : i));
         }
-        return [...prev, newIncident];
+        return [...prev, newIncident].slice(-500);
       });
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -54,7 +57,10 @@ export function MapViewport() {
       if (idx !== -1) merged[idx] = wsInc;
       else merged.push(wsInc);
     });
-    return merged.filter(i => !resolvedIds.has(i.id));
+    return merged.filter(i => 
+      !resolvedIds.has(i.id) && 
+      i.status !== 'Resolved' // Фільтруємо за статусом, що приходить з бекенду
+    );
   }, [initialIncidents, wsIncidents, resolvedIds]);
 
   // 1. Ініціалізація карти з жорстким очищенням пам'яті (захист від StrictMode)
@@ -75,57 +81,65 @@ export function MapViewport() {
     mapRef.current = map;
 
     return () => { 
-      if (heatLayerRef.current) {
-        map.removeLayer(heatLayerRef.current);
-      }
+      if (heatLayerRef.current) map.removeLayer(heatLayerRef.current);
+      if (markersGroupRef.current) map.removeLayer(markersGroupRef.current);
+      
       map.remove(); 
       mapRef.current = null;
       heatLayerRef.current = null;
+      markersGroupRef.current = null;
     };
   }, []);
 
-  // 2. Блискавичні маркери (Без збереження у useRef)
+// 2. Блискавичні маркери (Оптимізовано: точкове оновлення)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    // Створюємо нову групу при кожній зміні (це швидко і не залишає "фантомних" точок)
-    const markersGroup = L.layerGroup().addTo(map);
+    if (!markersGroupRef.current) {
+      markersGroupRef.current = L.layerGroup().addTo(map);
+    }
+    const group = markersGroupRef.current;
 
-    liveIncidents.forEach((incident) => {
-      const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
-
-      const customIcon = L.divIcon({
-        className: 'custom-div-icon cursor-pointer',
-        html: `
-          <div class="relative w-3 h-3">
-            <div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div>
-            <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div>
-          </div>
-        `,
-        iconSize: [12, 12],
-        iconAnchor: [6, 6],
-      });
-
-      const marker = L.marker([incident.lat, incident.lng], { icon: customIcon });
-      
-      marker.bindTooltip(`
-        <div class="bg-[#0a0a0f]/95 border border-[#1a1a24] rounded px-2 py-1 text-white text-xs">
-          <div class="font-semibold">${incident.type}</div>
-          <div class="text-[#71717a]">Клікніть для управління</div>
-        </div>
-      `, { direction: 'top', className: 'leaflet-custom-tooltip', opacity: 1 });
-
-      marker.on('click', () => {
-        setSelectedIncident(incident);
-      });
-
-      markersGroup.addLayer(marker);
+    // 1. Створюємо Map з усіма маркерами, що вже є на карті
+    const existingMarkers = new Map<string, L.Marker>();
+    group.getLayers().forEach((layer: any) => {
+      existingMarkers.set(layer.incidentId, layer);
     });
 
-    return () => { 
-      markersGroup.remove(); 
-    };
+    // 2. Видаляємо лише ті, яких немає в liveIncidents
+    const currentIds = new Set(liveIncidents.map(i => i.id));
+    existingMarkers.forEach((marker, id) => {
+      if (!currentIds.has(id)) {
+        group.removeLayer(marker);
+        existingMarkers.delete(id);
+      }
+    });
+
+    // 3. Додаємо нові точки
+    liveIncidents.forEach((incident) => {
+      if (!existingMarkers.has(incident.id)) {
+        const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
+        
+        const customIcon = L.divIcon({
+          className: 'custom-div-icon cursor-pointer',
+          html: `
+            <div class="relative w-3 h-3">
+              <div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div>
+              <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div>
+            </div>
+          `,
+          iconSize: [12, 12],
+          iconAnchor: [6, 6],
+        });
+
+        const marker: any = L.marker([incident.lat, incident.lng], { icon: customIcon });
+        marker.incidentId = incident.id; // Прив'язка ID
+        
+        marker.on('click', () => setSelectedIncident(incident));
+        group.addLayer(marker);
+      }
+    });
   }, [liveIncidents]);
 
   // 3. Оптимізована теплова карта
@@ -168,8 +182,8 @@ export function MapViewport() {
   const handleResolve = async () => {
     if (!selectedIncident) return;
     setIsResolving(true);
+    setResolvedIds((prev) => new Set(prev).add(selectedIncident.id));
     try {
-      // КЛЮЧОВИЙ ФІКС: Відправляємо "Resolved" з точністю до регістра
       await updateIncidentStatus(selectedIncident.id, 'Resolved');
       
       setResolvedIds((prev) => {
