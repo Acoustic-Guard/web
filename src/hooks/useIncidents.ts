@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { getIncidents } from '../services/incidentsService';
 import { useIncidentStream } from './useIncidentStream';
 import type { IncidentMarker } from '../types/incidents';
+import { useAuth } from './useAuth';
 
 interface UseIncidentsResult {
   incidents: IncidentMarker[];
@@ -12,6 +13,7 @@ interface UseIncidentsResult {
 const MAX_INCIDENTS = 500;
 
 export function useIncidents(): UseIncidentsResult {
+  const { user } = useAuth();
   const [incidents, setIncidents] = useState<IncidentMarker[]>([]);
   const [loading, setLoading]     = useState(true);
   const [error, setError]         = useState<string | null>(null);
@@ -20,12 +22,10 @@ export function useIncidents(): UseIncidentsResult {
     setIncidents((prev) => {
       const index = prev.findIndex((inc) => inc.id === newIncident.id);
       if (index !== -1) {
-        // Оновлюємо існуючий інцидент
         const updated = [...prev];
         updated[index] = newIncident;
         return updated;
       } else {
-        // Додаємо новий та зберігаємо лише останні MAX_INCIDENTS
         return [...prev, newIncident].slice(-MAX_INCIDENTS);
       }
     });
@@ -38,12 +38,13 @@ export function useIncidents(): UseIncidentsResult {
       .then((data) => { if (!cancelled){
         const activeOnly = data.filter(inc => inc.status !== 'Resolved');
         setIncidents(activeOnly); 
+        setError(null);
       } })
       .catch((err) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
-  }, []);
+  }, [user]);
 
   useIncidentStream({ onIncident: handleNewIncident });
 
