@@ -9,17 +9,19 @@ interface UseAlertsResult {
   error:   string | null;
 }
 
+const MAX_ALERTS = 100;
+
 export function useAlerts(): UseAlertsResult {
   const [alerts, setAlerts]   = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
 
-  // Початкове завантаження históричних алертів
+  // Початкове завантаження історичних алертів
   useEffect(() => {
     let cancelled = false;
 
     getAlerts()
-      .then((data) => { if (!cancelled) setAlerts(data); })
+      .then((data) => { if (!cancelled) setAlerts(data.slice(0, MAX_ALERTS)); }) // Обрізаємо і початкові дані
       .catch((err) => { if (!cancelled) setError(err.message); })
       .finally(() => { if (!cancelled) setLoading(false); });
 
@@ -30,9 +32,10 @@ export function useAlerts(): UseAlertsResult {
   const handleNewAlert = useCallback((alert: Alert) => {
     setAlerts((prev) => {
       if (prev.some((a) => a.id === alert.id)) {
-        return prev; // Prevent duplicate injection
+        return prev; // Запобігаємо дублікатам
       }
-      return [alert, ...prev];
+      // Додаємо новий алерт на початок і обрізаємо до MAX_ALERTS
+      return [alert, ...prev].slice(0, MAX_ALERTS);
     });
   }, []);
 
