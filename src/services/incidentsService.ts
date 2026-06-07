@@ -19,15 +19,17 @@ export async function getIncidents(): Promise<IncidentMarker[]> {
 }
 
 export async function updateIncidentStatus(id: string, status: string): Promise<void> {
-  if (IS_MOCK) {
-    await new Promise((r) => setTimeout(r, 300));
-    return;
-  }
+  const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
+  if (IS_MOCK) return;
 
   const res = await fetchWithAuth(`${ENDPOINTS.incidents}/${id}/status`, {
     method: 'PATCH',
-    body: JSON.stringify(status),
+    headers: { 'Content-Type': 'text/plain' },
+    body: status,
   });
 
-  if (!res.ok) throw new Error(`Status update failed: ${res.status}`);
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Помилка сервера ${res.status}: ${errorText}`);
+  }
 }
