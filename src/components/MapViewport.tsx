@@ -185,9 +185,8 @@ export function MapViewport() {
   const handleResolve = async () => {
     if (!selectedIncident) return;
     setIsResolving(true);
-    setResolvedIds((prev) => new Set(prev).add(selectedIncident.id));
     try {
-      await updateIncidentStatus(selectedIncident.id, 'Resolved');
+      await updateIncidentStatus(selectedIncident.id, 'RESOLVED');
       
       setResolvedIds((prev) => {
         const newSet = new Set(prev);
@@ -196,9 +195,9 @@ export function MapViewport() {
       });
       
       setSelectedIncident(null);
-    } catch (e) {
+    } catch (e: any) {
       console.error(e);
-      alert('Помилка при оновленні статусу інциденту');
+      alert(e.message || 'Помилка при оновленні статусу інциденту');
     } finally {
       setIsResolving(false);
     }
