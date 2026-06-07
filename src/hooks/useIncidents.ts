@@ -36,7 +36,7 @@ export function useIncidents(): UseIncidentsResult {
 
     getIncidents()
       .then((data) => { if (!cancelled){
-        const activeOnly = data.filter(inc => inc.status !== 'Resolved');
+        const activeOnly = data.filter(inc => inc.status && inc.status.toUpperCase() !== 'RESOLVED');
         setIncidents(activeOnly); 
         setError(null);
       } })
