@@ -4,7 +4,7 @@ import { Navigation } from './Navigation';
 export default function MainLayout() {
   return (
     <div className="flex h-screen overflow-hidden bg-[#0a0a0f] text-white">
-      <Navigation activeView="map" onViewChange={() => {}} />
+      <Navigation/>
 
       <div className="flex-1 flex flex-col overflow-hidden">
         

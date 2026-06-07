@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { LockKeyhole, LogOut } from 'lucide-react';
+import { useNavigate, useLocation } from 'react-router-dom'; // 1. ІМПОРТУЄМО ХУКИ РОУТЕРА
 import { NAV_ITEMS } from '../../constants/navItems';
 import { useAuth } from '../../hooks/useAuth';
 import { LoginModal } from '../auth/LoginModal';
-import type { NavigationProps } from '../../types/navigation';
 
-export function Navigation({ activeView, onViewChange }: NavigationProps) {
+// 2. ПРОПСИ БІЛЬШЕ НЕ ПОТРІБНІ, РОУТЕР КЕРУЄ ВСІМ САМ
+export function Navigation() {
   const { isAdmin, user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);
+  
+  const navigate = useNavigate();
+  const location = useLocation();
 
   return (
     <>
@@ -22,11 +26,13 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
         <div className="flex flex-col items-center gap-6 flex-1">
           {NAV_ITEMS.map((item) => {
             const Icon = item.icon;
-            const isActive = activeView === item.id;
+            const path = item.id === 'dashboard' ? '/' : `/${item.id}`;
+            const isActive = location.pathname === path;
+
             return (
               <button
                 key={item.id}
-                onClick={() => onViewChange(item.id)}
+                onClick={() => navigate(path)} // 5. РОБИМО РЕАЛЬНИЙ ПЕРЕХІД
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                   isActive
                     ? 'bg-[#2563eb] text-white'
@@ -48,7 +54,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
                 title={`Оператор: ${user?.username}`}
               >
                 <span className="text-xs font-semibold text-[#2563eb]">
-                  {user?.username.slice(0, 2).toUpperCase()}
+                  {user?.username?.slice(0, 2).toUpperCase()}
                 </span>
               </div>
               <button
