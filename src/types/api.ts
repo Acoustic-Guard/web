@@ -1,15 +1,12 @@
 import type { Alert, IncidentMarker } from './incidents';
 import type { MetricCardProps } from './telemetry';
 
-// ─── Типи, які поверне бекенд (Java DTO → JSON) ───────────────────────────────
-// Якщо бекенд змінить поле — виправляємо тут і в mapper'і, компоненти не чіпаємо.
-
 export interface ApiAlert {
   id:         string;
-  threatType: string;       // бекенд може використовувати threatType замість type
+  threatType: string;
   confidence: number;
   location:   string;
-  detectedAt: string;       // ISO 8601, наприклад "2024-01-15T14:32:00Z"
+  detectedAt: string;
 }
 
 export interface ApiIncident {
@@ -18,6 +15,7 @@ export interface ApiIncident {
   longitude: number;
   type:      string;
   intensity: number;
+  status:    string;
 }
 
 export interface ApiTelemetry {
@@ -28,8 +26,6 @@ export interface ApiTelemetry {
   latencyStatus:  'normal' | 'warning' | 'critical';
   noiseStatus:    'normal' | 'warning' | 'critical';
 }
-
-// ─── Mapper'и: ApiТип → внутрішній тип фронту ────────────────────────────────
 
 export function mapApiAlert(raw: ApiAlert): Alert {
   return {
@@ -48,6 +44,7 @@ export function mapApiIncident(raw: ApiIncident): IncidentMarker {
     lng:       raw.longitude,
     type:      raw.type as IncidentMarker['type'],
     intensity: raw.intensity,
+    status:    raw.status,
   };
 }
 
