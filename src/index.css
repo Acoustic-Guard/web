@@ -160,3 +160,17 @@
 ::-webkit-scrollbar-thumb:hover {
   background: #2a2a34;
 }
+
+.recharts-wrapper, 
+.recharts-surface, 
+.recharts-layer, 
+.recharts-cartesian-axis,
+.recharts-cartesian-axis-line,
+.recharts-cartesian-axis-tick,
+.recharts-cartesian-axis-tick-line,
+.recharts-cartesian-grid-horizontal,
+.recharts-cartesian-grid-vertical,
+.recharts-sector,
+.recharts-line-curve {
+  @apply border-none outline-none;
+}

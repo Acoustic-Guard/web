@@ -6,11 +6,21 @@ export interface ThreatDistribution {
 }
 
 export interface HistoricalIncident {
-  datetime: string;
+  id: string;
   type: string;
-  coordinates: string;
-  confidence: number;
+  intensity: number;
   status: string;
+  createdAt: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
+export interface TimeSeriesPoint {
+  timestamp: string;
+  UAV: number;
+  Explosion: number;
+  Siren: number;
+  Generator: number;
 }
 
 export interface AnalyticsData {
@@ -20,6 +30,7 @@ export interface AnalyticsData {
   criticalCount: number;
   threatDistribution: ThreatDistribution[];
   history: HistoricalIncident[];
+  timeSeries: TimeSeriesPoint[];
 }
 
 export async function getAnalytics(range: string = '24h'): Promise<AnalyticsData> {
