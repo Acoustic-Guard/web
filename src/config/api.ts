@@ -8,6 +8,8 @@ export const ENDPOINTS = {
   alerts: '/alerts',
   telemetry: '/telemetry',
   incidents: '/incidents',
+  sensors: '/sensors',
+  analytics: '/analytics',
 } as const;
 
 export const WS_TOPICS = {
