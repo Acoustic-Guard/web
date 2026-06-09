@@ -10,10 +10,12 @@ import { useIncidentStream } from '../hooks/useIncidentStream';
 import { updateIncidentStatus } from '../services/incidentsService';
 import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
+import { useAuth } from '../hooks/useAuth';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
+  const { isAdmin } = useAuth();
   
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
@@ -207,7 +209,7 @@ export function MapViewport() {
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full min-w-[100px] min-h-[100px]">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {selectedIncident && (
+      {selectedIncident && isAdmin &&(
         <div className="absolute top-4 right-16 z-[600] w-72 bg-[#0a0a0f]/95 backdrop-blur-md border border-[#1a1a24] rounded-xl p-4 shadow-2xl">
           <div className="flex justify-between items-start mb-4">
             <div>
