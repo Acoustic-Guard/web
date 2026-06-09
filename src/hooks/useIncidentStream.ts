@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef} from 'react';
-
 import { mapApiIncident, type ApiIncident } from '../types/api';
 import { WS_TOPICS } from '../config/api';
 import { ensureConnected, getStompClient } from '../services/stompClient';
@@ -30,6 +29,7 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
           longitude: 35.5 + Math.random() * 2,
           type: MOCK_TYPES[Math.floor(Math.random() * MOCK_TYPES.length)],
           intensity: parseFloat((0.3 + Math.random() * 0.7).toFixed(2)),
+          status: 'Detected',
         };
         onIncidentRef.current(mapApiIncident(mockRaw));
       }, 12000);
