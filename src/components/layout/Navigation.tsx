@@ -24,7 +24,9 @@ export function Navigation() {
         </div>
 
         <div className="flex flex-col items-center gap-6 flex-1">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.filter(item => {if (item.id === 'analytics' || item.id === 'network') return isAdmin;
+           return true;
+          }).map((item) => {
             const Icon = item.icon;
             const path = item.id === 'dashboard' ? '/' : `/${item.id}`;
             const isActive = location.pathname === path;
@@ -32,7 +34,7 @@ export function Navigation() {
             return (
               <button
                 key={item.id}
-                onClick={() => navigate(path)} // 5. РОБИМО РЕАЛЬНИЙ ПЕРЕХІД
+                onClick={() => navigate(path)}
                 className={`w-10 h-10 rounded-lg flex items-center justify-center transition-colors ${
                   isActive
                     ? 'bg-[#2563eb] text-white'
