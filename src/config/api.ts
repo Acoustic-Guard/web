@@ -10,6 +10,7 @@ export const ENDPOINTS = {
   incidents: '/incidents',
   sensors: '/sensors',
   analytics: '/analytics',
+  noiseMap: '/public/noise-map',
 } as const;
 
 export const WS_TOPICS = {
