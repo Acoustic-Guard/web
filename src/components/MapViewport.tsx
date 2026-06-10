@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, useMemo } from 'react';
+import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { ZoomIn, ZoomOut, Layers, X, CheckCircle } from 'lucide-react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -12,26 +12,32 @@ import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
 import { useAuth } from '../hooks/useAuth';
 
+const ZONE_DEG = 0.045;
+
+function intensityToRgb(intensity: number): string {
+  if (intensity >= 0.8) return '239,68,68';
+  if (intensity >= 0.6) return '249,115,22';
+  if (intensity >= 0.4) return '234,179,8';
+  if (intensity >= 0.2) return '34,197,94';
+  return '37,99,235';
+}
+
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   const { isAdmin } = useAuth();
   
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const heatLayerRef = useRef<any>(null);
-
   const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const publicOverlaysRef = useRef<L.SVGOverlay[]>([]);
 
   const [showHeatmap, setShowHeatmap] = useState(true);
   
-  // Стани для панелі оператора
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());
   const [isResolving, setIsResolving] = useState(false);
   
   const { incidents: initialIncidents } = useIncidents();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const [wsIncidents, setWsIncidents] = useState<any[]>([]);
 
   useIncidentStream({
@@ -45,7 +51,6 @@ export function MapViewport() {
         return [...prev, newIncident].slice(-500);
       });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setSelectedIncident((current: any) => {
         if (current && current.id === newIncident.id) return newIncident;
         return current;
@@ -68,7 +73,70 @@ export function MapViewport() {
     );
   }, [initialIncidents, wsIncidents, resolvedIds]);
 
-  // 1. Ініціалізація карти з жорстким очищенням пам'яті (захист від StrictMode)
+  const clearPublicOverlays = useCallback(() => {
+    const map = mapRef.current;
+    publicOverlaysRef.current.forEach((ov) => { if (map) map.removeLayer(ov); });
+    publicOverlaysRef.current = [];
+  }, []);
+
+  const drawPublicZones = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    clearPublicOverlays();
+
+    liveIncidents.forEach((incident, idx) => {
+      const lat = incident.lat ?? incident.lat;
+      const lng = incident.lng ?? incident.lng;
+      if (lat == null || lng == null) return;
+
+      const r = ZONE_DEG;
+      const bounds = L.latLngBounds([lat - r, lng - r], [lat + r, lng + r]);
+
+      const rgb = intensityToRgb(incident.intensity);
+      const gradId = `pg-${idx}-${Date.now()}`;
+      const svgNS = 'http://www.w3.org/2000/svg';
+
+      const svg = document.createElementNS(svgNS, 'svg');
+      svg.setAttribute('xmlns', svgNS);
+      svg.setAttribute('viewBox', '0 0 100 100');
+
+      const defs = document.createElementNS(svgNS, 'defs');
+      const grad = document.createElementNS(svgNS, 'radialGradient');
+      grad.setAttribute('id', gradId);
+      grad.setAttribute('cx', '50%');
+      grad.setAttribute('cy', '50%');
+      grad.setAttribute('r', '50%');
+
+      const stops: [string, number][] = [
+        ['0%',   0.75 * incident.intensity],
+        ['30%',  0.5  * incident.intensity],
+        ['60%',  0.25 * incident.intensity],
+        ['100%', 0],
+      ];
+      stops.forEach(([offset, opacity]) => {
+        const stop = document.createElementNS(svgNS, 'stop');
+        stop.setAttribute('offset', offset);
+        stop.setAttribute('stop-color', `rgb(${rgb})`);
+        stop.setAttribute('stop-opacity', String(Math.min(opacity, 1)));
+        grad.appendChild(stop);
+      });
+      defs.appendChild(grad);
+      svg.appendChild(defs);
+
+      const circle = document.createElementNS(svgNS, 'circle');
+      circle.setAttribute('cx', '50');
+      circle.setAttribute('cy', '50');
+      circle.setAttribute('r', '50');
+      circle.setAttribute('fill', `url(#${gradId})`);
+      svg.appendChild(circle);
+
+      const overlay = L.svgOverlay(svg, bounds, { interactive: false, opacity: 1 });
+      overlay.addTo(map);
+      publicOverlaysRef.current.push(overlay);
+    });
+  }, [liveIncidents, clearPublicOverlays]);
+
+
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
 
@@ -86,6 +154,7 @@ export function MapViewport() {
     mapRef.current = map;
 
     return () => { 
+      clearPublicOverlays();
       if (heatLayerRef.current) map.removeLayer(heatLayerRef.current);
       if (markersGroupRef.current) map.removeLayer(markersGroupRef.current);
       
@@ -94,9 +163,16 @@ export function MapViewport() {
       heatLayerRef.current = null;
       markersGroupRef.current = null;
     };
-  }, []);
+  }, [clearPublicOverlays]);
 
-// 2. Блискавичні маркери (Оптимізовано: точкове оновлення)
+  useEffect(() => {
+    if (isAdmin) {
+      clearPublicOverlays();
+      return;
+    }
+    drawPublicZones();
+  }, [liveIncidents, isAdmin, drawPublicZones, clearPublicOverlays]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -106,13 +182,16 @@ export function MapViewport() {
     }
     const group = markersGroupRef.current;
 
-    // 1. Створюємо Map з усіма маркерами, що вже є на карті
+    if (!isAdmin) {
+      group.clearLayers();
+      return;
+    }
+
     const existingMarkers = new Map<string, L.Marker>();
     group.getLayers().forEach((layer: any) => {
       existingMarkers.set(layer.incidentId, layer);
     });
 
-    // 2. Видаляємо лише ті, яких немає в liveIncidents
     const currentIds = new Set(liveIncidents.map(i => i.id));
     existingMarkers.forEach((marker, id) => {
       if (!currentIds.has(id)) {
@@ -121,8 +200,11 @@ export function MapViewport() {
       }
     });
 
-    // 3. Додаємо нові точки
     liveIncidents.forEach((incident) => {
+      const lat = incident.lat ?? incident.lat;
+      const lng = incident.lng ?? incident.lng;
+      if (lat == null || lng == null) return;
+
       if (!existingMarkers.has(incident.id)) {
         const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
         
@@ -138,21 +220,20 @@ export function MapViewport() {
           iconAnchor: [6, 6],
         });
 
-        const marker: any = L.marker([incident.lat, incident.lng], { icon: customIcon });
+        const marker: any = L.marker([lat, lng], { icon: customIcon });
         marker.incidentId = incident.id; // Прив'язка ID
         
         marker.on('click', () => setSelectedIncident(incident));
         group.addLayer(marker);
       }
     });
-  }, [liveIncidents]);
+  }, [liveIncidents, isAdmin]);
 
-  // 3. Оптимізована теплова карта
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
 
-    if (!showHeatmap || liveIncidents.length === 0) {
+    if (!isAdmin || !showHeatmap || liveIncidents.length === 0) {
       if (heatLayerRef.current) {
         map.removeLayer(heatLayerRef.current);
         heatLayerRef.current = null;
@@ -160,10 +241,11 @@ export function MapViewport() {
       return;
     }
 
-    const heatPoints = liveIncidents.map((i) => [i.lat, i.lng, i.intensity]);
+    const heatPoints = liveIncidents
+      .filter((i: any) => (i.lat != null || i.latitude != null))
+      .map((i: any) => [i.lat ?? i.latitude, i.lng ?? i.longitude, i.intensity]);
 
     if (!heatLayerRef.current) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       heatLayerRef.current = (L as any).heatLayer(heatPoints, {
         radius: 50, blur: 35, maxZoom: 13, max: 1.0,
         gradient: { 0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444' },
@@ -182,7 +264,11 @@ export function MapViewport() {
     } else {
       heatLayerRef.current.setLatLngs(heatPoints);
     }
-  }, [liveIncidents, showHeatmap]);
+  }, [liveIncidents, showHeatmap, isAdmin]);
+
+  useEffect(() => {
+    requestAnimationFrame(() => mapRef.current?.invalidateSize());
+  }, [isAdmin]);
 
   const handleResolve = async () => {
     if (!selectedIncident) return;
@@ -209,7 +295,7 @@ export function MapViewport() {
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full min-w-[100px] min-h-[100px]">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {selectedIncident && isAdmin &&(
+      {selectedIncident && isAdmin && (
         <div className="absolute top-4 right-16 z-[600] w-72 bg-[#0a0a0f]/95 backdrop-blur-md border border-[#1a1a24] rounded-xl p-4 shadow-2xl">
           <div className="flex justify-between items-start mb-4">
             <div>
@@ -231,11 +317,11 @@ export function MapViewport() {
             </div>
             <div className="flex justify-between items-center bg-[#1a1a24]/50 rounded px-2 py-1.5 text-xs">
               <span className="text-[#71717a]">Широта:</span>
-              <span className="text-white font-mono">{selectedIncident.lat.toFixed(6)}</span>
+              <span className="text-white font-mono">{selectedIncident.lat?.toFixed(6) ?? selectedIncident.latitude?.toFixed(6)}</span>
             </div>
             <div className="flex justify-between items-center bg-[#1a1a24]/50 rounded px-2 py-1.5 text-xs">
               <span className="text-[#71717a]">Довгота:</span>
-              <span className="text-white font-mono">{selectedIncident.lng.toFixed(6)}</span>
+              <span className="text-white font-mono">{selectedIncident.lng?.toFixed(6) ?? selectedIncident.longitude?.toFixed(6)}</span>
             </div>
           </div>
 
@@ -250,17 +336,19 @@ export function MapViewport() {
         </div>
       )}
 
-      <div className="absolute top-4 left-4 z-[500] flex gap-2">
-        <button
-          onClick={() => setShowHeatmap(!showHeatmap)}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
-            showHeatmap ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
-          }`}
-        >
-          <Layers size={14} />
-          Heatmap
-        </button>
-      </div>
+      {isAdmin && (
+        <div className="absolute top-4 left-4 z-[500] flex gap-2">
+          <button
+            onClick={() => setShowHeatmap(!showHeatmap)}
+            className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors ${
+              showHeatmap ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
+            }`}
+          >
+            <Layers size={14} />
+            Heatmap
+          </button>
+        </div>
+      )}
 
       <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors">
