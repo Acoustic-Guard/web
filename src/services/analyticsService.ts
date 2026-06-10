@@ -33,8 +33,16 @@ export interface AnalyticsData {
   timeSeries: TimeSeriesPoint[];
 }
 
-export async function getAnalytics(range: string = '24h'): Promise<AnalyticsData> {
-  const res = await fetchWithAuth(`${ENDPOINTS.analytics}?range=${range}`);
+export async function getAnalytics(range: string = '24h', start?: string, end?: string): Promise<AnalyticsData> {
+  let url = `${ENDPOINTS.analytics}`;
+  
+  if (range === 'custom' && start && end) {
+    url += `?start=${start}T00:00:00Z&end=${end}T23:59:59Z`;
+  } else {
+    url += `?range=${range}`;
+  }
+
+  const res = await fetchWithAuth(url);
   if (!res.ok) {
     throw new Error(`Failed to fetch analytics: ${res.status}`);
   }
