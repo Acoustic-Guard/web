@@ -1,4 +1,4 @@
-import { fetchWithAuth, ENDPOINTS } from '../config/api';
+import { fetchWithAuth, ENDPOINTS, API_CONFIG } from '../config/api';
 import { incidents as mockIncidents } from '../mocks/incidentsMock';
 import { mapApiIncident, type ApiIncident } from '../types/api';
 import type { IncidentMarker } from '../types/incidents';
@@ -13,6 +13,18 @@ export async function getIncidents(): Promise<IncidentMarker[]> {
 
   const res = await fetchWithAuth(ENDPOINTS.incidents);
   if (!res.ok) throw new Error(`Incidents fetch failed: ${res.status}`);
+
+  const data: ApiIncident[] = await res.json();
+  return data.map(mapApiIncident);
+}
+
+export async function getPublicIncidents(): Promise<IncidentMarker[]> {
+  if (IS_MOCK) {
+    await new Promise((r) => setTimeout(r, 300));
+    return mockIncidents;
+  }
+  const res = await fetch(`${API_CONFIG.BASE_URL}/public/incidents`);
+  if (!res.ok) throw new Error(`Public incidents fetch failed: ${res.status}`);
 
   const data: ApiIncident[] = await res.json();
   return data.map(mapApiIncident);
