@@ -49,15 +49,22 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default function AnalyticsPage() {
-  const [timeRange, setTimeRange] = useState('24h');
+ const [timeRange, setTimeRange] = useState('24h');
+  const [appliedStart, setAppliedStart] = useState('');
+  const [appliedEnd, setAppliedEnd] = useState('');
+
   const [data, setData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(true);
+
+ const [showDatePicker, setShowDatePicker] = useState(false);
+  const [inputStart, setInputStart] = useState('');
+  const [inputEnd, setInputEnd] = useState('');
 
   useEffect(() => {
     const fetchAnalyticsData = (isInitial = false) => {
       if (isInitial) setLoading(true);
 
-      getAnalytics(timeRange)
+      getAnalytics(timeRange, appliedStart, appliedEnd)
         .then(setData)
         .catch((err) => console.error('Analytics load error:', err))
         .finally(() => {
@@ -72,11 +79,19 @@ export default function AnalyticsPage() {
     }, 30000);
 
     return () => clearInterval(intervalId);
-  }, [timeRange]);
+  }, [timeRange, appliedStart, appliedEnd]);
 
-  const handleRangeChange = (range: string) => {
+  const handleStandardRangeChange = (range: string) => {
+    setShowDatePicker(false);
     if (range === timeRange) return;
     setTimeRange(range);
+  };
+
+  const handleCustomRangeApply = () => {
+    if (!inputStart || !inputEnd) return;
+    setAppliedStart(inputStart);
+    setAppliedEnd(inputEnd);
+    setTimeRange('custom');
   };
 
   const distributionData = useMemo(() => {
@@ -129,7 +144,6 @@ export default function AnalyticsPage() {
     URL.revokeObjectURL(url);
   };
 
-  //Line Chart
   const actualTimeSeries = data?.timeSeries || [];
 
   const lineChartData = {
@@ -160,7 +174,6 @@ export default function AnalyticsPage() {
     }
   };
 
-  //Pie Chart
   const pieChartData = {
     labels: distributionData.map(d => d.name),
     datasets: [{
@@ -191,23 +204,58 @@ export default function AnalyticsPage() {
 
   return (
     <div className="flex-1 overflow-y-auto bg-[#0a0a0f]">
-      {/* ── Header ── */}
       <div className="px-6 py-4 border-b border-[#1a1a24] flex items-center justify-between">
+        
         <div className="flex items-center gap-4">
           {['24h', '7d', '30d'].map((range) => (
             <button
               key={range}
-              onClick={() => handleRangeChange(range)}
-              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${timeRange === range ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
-                }`}
+              onClick={() => handleStandardRangeChange(range)}
+              className={`px-3 py-1.5 rounded-lg text-sm transition-colors ${
+                timeRange === range && !showDatePicker ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
+              }`}
             >
               Last {range === '24h' ? '24 hours' : range === '7d' ? '7 days' : '30 days'}
             </button>
           ))}
-          <button className="px-3 py-1.5 rounded-lg text-sm bg-[#1a1a24] text-[#71717a] hover:text-white transition-colors flex items-center gap-2">
+          
+          <button 
+            onClick={() => setShowDatePicker(!showDatePicker)}
+            className={`px-3 py-1.5 rounded-lg text-sm transition-colors flex items-center gap-2 ${
+              showDatePicker || timeRange === 'custom' ? 'bg-[#2563eb] text-white' : 'bg-[#1a1a24] text-[#71717a] hover:text-white'
+            }`}
+          >
             <Calendar size={14} /> Custom Range
           </button>
+
+          {showDatePicker && (
+            <div className="flex items-center gap-2 bg-[#1a1a24] p-1 rounded-lg ml-2 border border-[#333]">
+              <input 
+                type="date" 
+                value={inputStart}
+                onChange={(e) => setInputStart(e.target.value)}
+                style={{ colorScheme: 'dark' }}
+                className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer"
+              />
+              <span className="text-[#71717a]">-</span>
+              <input 
+                type="date" 
+                value={inputEnd}
+                onChange={(e) => setInputEnd(e.target.value)}
+                style={{ colorScheme: 'dark' }}
+                className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer"
+              />
+              <button 
+                onClick={handleCustomRangeApply}
+                disabled={!inputStart || !inputEnd}
+                className="px-3 py-1 bg-[#2563eb] text-white rounded text-sm disabled:opacity-50 hover:bg-[#1d4ed8] transition-colors"
+              >
+                Go
+              </button>
+            </div>
+          )}
         </div>
+
         <button
           onClick={handleExportReport}
           disabled={loading || !data?.history}
@@ -218,7 +266,6 @@ export default function AnalyticsPage() {
       </div>
 
       <div className="p-6">
-        {/* ── KPI cards ── */}
         <div className="grid grid-cols-4 gap-4 mb-6">
           <StatCard title="Total Incidents" value={data?.totalIncidents} icon={AlertTriangle} />
           <StatCard title="Most Frequent" value={mostFrequent?.name || '—'} subtitle={`${mostFrequent?.value || 0} detections`} icon={TrendingUp} valueColor={mostFrequent ? THREAT_COLORS[mostFrequent.name] : 'text-white'} />
@@ -230,7 +277,6 @@ export default function AnalyticsPage() {
           <StatCard title="Critical Events" value={data?.criticalCount} subtitle="Confidence > 90%" icon={AlertTriangle} valueColor="text-red-400" />
         </div>
 
-        {/* ── Charts ── */}
         <div className="grid grid-cols-3 gap-4 mb-6">
           <div className="col-span-2 bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-4" style={{ minWidth: 0 }}>
             <h3 className="text-sm font-semibold text-white mb-4">Threat Frequency Over Time</h3>
@@ -278,7 +324,6 @@ export default function AnalyticsPage() {
           </div>
         </div>
 
-        {/* ── Table ── */}
         <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg overflow-hidden">
           <div className="px-4 py-3 border-b border-[#1a1a24] flex items-center justify-between">
             <h3 className="text-sm font-semibold text-white">Historical Incidents</h3>
