@@ -202,7 +202,7 @@ export function MapViewport() {
 
     if (heatLayerRef.current) map.removeLayer(heatLayerRef.current);
     heatLayerRef.current = (L as any).heatLayer(heatPoints, {
-      radius: 50, blur: 35, maxZoom: 13, max: 1.0,
+      radius: 60, blur: 50, maxZoom: 13, max: 1.0,
       gradient: { 0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444' },
     }).addTo(map);
   }, [liveIncidents, activeLayer, isAdmin]);
