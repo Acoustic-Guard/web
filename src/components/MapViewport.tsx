@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
@@ -35,6 +35,30 @@ export function MapViewport() {
   const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
   const { points: apiNoisePoints } = useNoiseMap();
   const noisePoints = (apiNoisePoints && apiNoisePoints.length > 0) ? apiNoisePoints : STATIC_MOCK_NOISE_POINTS;
+
+  const baseClippedGrid = useMemo(() => {
+    const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);
+    const bbox = turf.bbox(districtPolygon);
+    const rawGrid = turf.hexGrid(bbox, 0.45, { units: 'kilometers' });
+
+    const clippedFeatures: Feature<Polygon | MultiPolygon>[] = [];
+    
+    for (const hex of rawGrid.features) {
+      const clipped = turf.intersect(turf.featureCollection([hex, districtPolygon]));
+      if (!clipped) continue;
+      
+      const center = turf.centerOfMass(hex);
+      
+      clipped.properties = {
+        centerLng: center.geometry.coordinates[0],
+        centerLat: center.geometry.coordinates[1]
+      };
+      
+      clippedFeatures.push(clipped as Feature<Polygon | MultiPolygon>);
+    }
+    
+    return clippedFeatures;
+  }, []);
 
   const clearPublicOverlays = useCallback(() => {
     const map = mapRef.current;
@@ -190,37 +214,37 @@ export function MapViewport() {
       if (noiseLayerRef.current) { map.removeLayer(noiseLayerRef.current); noiseLayerRef.current = null; }
       return;
     }
-    const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);
-    const bbox = turf.bbox(districtPolygon);
-    const rawGrid = turf.hexGrid(bbox, 0.45, { units: 'kilometers' });
 
-    const clippedFeatures: Feature<Polygon | MultiPolygon>[] = [];
-    for (const hex of rawGrid.features) {
-      const clipped = turf.intersect(turf.featureCollection([hex, districtPolygon]));
-      if (!clipped) continue;
-      const center = turf.centerOfMass(hex);
-      const [lng, lat] = center.geometry.coordinates;
+    const timer = setTimeout(() => {
+      const finalFeatures = baseClippedGrid.map(feature => {
+        const lng = feature.properties!.centerLng;
+        const lat = feature.properties!.centerLat;
+        const db = idwInterpolate(lng, lat, noisePoints, 2.5, 2, 38);
 
-      const db = idwInterpolate(lng, lat, noisePoints, 2.5, 2, 38);
-      clipped.properties = { db };
-      clippedFeatures.push(clipped as Feature<Polygon | MultiPolygon>);
-    }
-
-    if (noiseLayerRef.current) map.removeLayer(noiseLayerRef.current);
-
-    noiseLayerRef.current = L.geoJSON(turf.featureCollection(clippedFeatures) as any, {
-      style: (feature: any) => {
-        const db: number = feature?.properties?.db ?? 38;
         return {
-          fillColor: dbToColor(db),
-          fillOpacity: dbToOpacity(db),
-          color: '#0f0f17',
-          weight: 1,
-          opacity: 0.5,
+          ...feature,
+          properties: { ...feature.properties, db }
         };
-      },
-    }).addTo(map);
-  }, [noisePoints, activeLayer]);
+      });
+
+      if (noiseLayerRef.current) map.removeLayer(noiseLayerRef.current);
+
+      noiseLayerRef.current = L.geoJSON(turf.featureCollection(finalFeatures) as any, {
+        style: (feature: any) => {
+          const db: number = feature?.properties?.db ?? 38;
+          return {
+            fillColor: dbToColor(db),
+            fillOpacity: dbToOpacity(db),
+            color: '#0f0f17',
+            weight: 1,
+            opacity: 0.5,
+          };
+        },
+      }).addTo(map);
+    }, 10);
+
+    return () => clearTimeout(timer);
+  }, [noisePoints, activeLayer, baseClippedGrid]);
 
   useEffect(() => { requestAnimationFrame(() => mapRef.current?.invalidateSize()); }, [isAdmin]);
 
