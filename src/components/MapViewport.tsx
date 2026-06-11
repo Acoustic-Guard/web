@@ -18,7 +18,6 @@ import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
 import { LayerControls } from './map-ui/LayerControls';
 import { ZoomControls } from './map-ui/ZoomControls';
 import { MapLegend } from './map-ui/MapLegend';
-import { STATIC_MOCK_NOISE_POINTS } from '../mocks/noisesMocks';
 import { LocationControl } from './map-ui/LocationControl';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
@@ -36,7 +35,7 @@ export function MapViewport() {
 
   const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
   const { points: apiNoisePoints } = useNoiseMap();
-  const noisePoints = (apiNoisePoints && apiNoisePoints.length > 0) ? apiNoisePoints : STATIC_MOCK_NOISE_POINTS;
+  const noisePoints = apiNoisePoints || [];
 
   const baseClippedGrid = useMemo(() => {
     const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);

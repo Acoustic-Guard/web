@@ -11,7 +11,9 @@ export function dbToColor(db: number): string {
 }
 
 export function dbToOpacity(db: number): number {
-  return Math.min(0.85, 0.35 + ((db - 30) / 55) * 0.5);
+  // Higher minimum opacity for low dB values to match legend brightness
+  const minOpacity = db < 45 ? 0.65 : 0.35;
+  return Math.min(0.85, minOpacity + ((db - 30) / 55) * 0.5);
 }
 
 export function idwInterpolate(
