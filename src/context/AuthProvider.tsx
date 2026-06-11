@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { AuthContext } from './AuthContext';
 import type { AuthUser, UserRole } from '../types/auth'; 
 import { loginRequest } from '../services/AuthService';
@@ -42,6 +42,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('role');
   };
 
+  useEffect(() => {
+    const handleUnauthorized = () => {
+      logout();
+       window.location.href = '/'; 
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, []);
+  
   const isAdmin = user?.role === 'ADMIN' || user?.role === 'ROLE_ADMIN';
   
   return (

@@ -37,11 +37,8 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
     headers,
   });
 
-  if (response.status === 401) {
-    localStorage.removeItem('jwt_token');
-    localStorage.removeItem('username');
-    localStorage.removeItem('role');
-    window.location.href = '/';
+  if (response.status === 401 || response.status === 403) {
+    window.dispatchEvent(new Event('auth:unauthorized'));
   }
 
   return response;
