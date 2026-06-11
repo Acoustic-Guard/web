@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { ZoomIn, ZoomOut, Layers, X, CheckCircle, Radio } from 'lucide-react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import 'leaflet.heat';
@@ -8,84 +7,18 @@ import * as turf from '@turf/turf';
 import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import districtGeoJson from '../constants/districtGeoJson.json';
 
-import { useIncidents } from '../hooks/useIncidents';
-import { useIncidentStream } from '../hooks/useIncidentStream';
 import { useNoiseMap } from '../hooks/useNoiseMap';
-import { updateIncidentStatus } from '../services/incidentsService';
+import { useAuth } from '../hooks/useAuth';
+import { useLiveIncidents } from '../hooks/useLiveIncidents';
 import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
-import { useAuth } from '../hooks/useAuth';
+import { dbToColor, dbToOpacity, idwInterpolate, intensityToRgb, ZONE_DEG } from '../utils/mapUtils';
 
-const ZONE_DEG = 0.045;
-
-function dbToColor(db: number): string {
-  if (db >= 75) return '#ef4444';
-  if (db >= 65) return '#f97316';
-  if (db >= 55) return '#eab308';
-  if (db >= 45) return '#3b82f6';
-  return '#22c55e';
-}
-
-function dbToOpacity(db: number): number {
-  return Math.min(0.85, 0.35 + ((db - 30) / 55) * 0.5);
-}
-
-function idwInterpolate(
-  hexCenterLng: number,
-  hexCenterLat: number,
-  noisePoints: { latitude: number; longitude: number; db: number }[],
-  influenceRadiusKm = 2.5,
-  p = 2,
-  baseDb = 38
-): number {
-  if (!noisePoints.length) return baseDb;
-
-  let weightedSum = 0;
-  let totalWeight = 0;
-
-  for (const pt of noisePoints) {
-    const distKm = turf.distance(
-      turf.point([hexCenterLng, hexCenterLat]),
-      turf.point([pt.longitude, pt.latitude]),
-      { units: 'kilometers' }
-    );
-
-    if (distKm > influenceRadiusKm) continue;
-
-    if (distKm < 0.001) return pt.db;
-
-    const w = 1 / Math.pow(distKm, p);
-    weightedSum += w * pt.db;
-    totalWeight += w;
-  }
-
-  if (totalWeight === 0) return baseDb;
-  return weightedSum / totalWeight;
-}
-
-function intensityToRgb(intensity: number): string {
-  if (intensity >= 0.8) return '239,68,68';
-  if (intensity >= 0.6) return '249,115,22';
-  if (intensity >= 0.4) return '234,179,8';
-  if (intensity >= 0.2) return '34,197,94';
-  return '37,99,235';
-}
-
-// ── Статичні mock-точки для демо───────────────────
-const STATIC_MOCK_NOISE_POINTS = [
-  { latitude: 50.441, longitude: 30.642, db: 84.5 },
-  { latitude: 50.444, longitude: 30.650, db: 76.2 },
-  { latitude: 50.443, longitude: 30.665, db: 68.0 },
-  { latitude: 50.430, longitude: 30.720, db: 52.1 },
-  { latitude: 50.390, longitude: 30.680, db: 42.0 },
-  { latitude: 50.438, longitude: 30.655, db: 71.5 },
-  { latitude: 50.410, longitude: 30.760, db: 38.0 },
-  { latitude: 50.420, longitude: 30.700, db: 59.3 },
-  { latitude: 50.445, longitude: 30.640, db: 81.0 },
-  { latitude: 50.360, longitude: 30.640, db: 45.0 },
-  { latitude: 50.375, longitude: 30.700, db: 55.0 },
-  { latitude: 50.460, longitude: 30.780, db: 62.0 },
-];
+import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
+import { LayerControls } from './map-ui/LayerControls';
+import { ZoomControls } from './map-ui/ZoomControls';
+import { MapLegend } from './map-ui/MapLegend';
+import { STATIC_MOCK_NOISE_POINTS } from '../mocks/noisesMocks';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -99,42 +32,9 @@ export function MapViewport() {
 
   const [activeLayer, setActiveLayer] = useState<'heatmap' | 'noisemap' | 'none'>('heatmap');
 
-  const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
-  const [resolvedIds,      setResolvedIds]       = useState<Set<string>>(new Set());
-  const [isResolving,      setIsResolving]       = useState(false);
-
-  const { incidents: initialIncidents } = useIncidents();
-  const [wsIncidents, setWsIncidents]   = useState<any[]>([]);
-
+  const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
   const { points: apiNoisePoints } = useNoiseMap();
-  const noisePoints = (apiNoisePoints && apiNoisePoints.length > 0)
-    ? apiNoisePoints
-    : STATIC_MOCK_NOISE_POINTS;
-
-  useIncidentStream({
-    onIncident: (newIncident) => {
-      if (resolvedIds.has(newIncident.id)) return;
-      setWsIncidents((prev) => {
-        const exists = prev.some((i) => i.id === newIncident.id);
-        if (exists) return prev.map((i) => (i.id === newIncident.id ? newIncident : i));
-        return [...prev, newIncident].slice(-500);
-      });
-      setSelectedIncident((current: any) => {
-        if (current && current.id === newIncident.id) return newIncident;
-        return current;
-      });
-    },
-  });
-
-  const liveIncidents = useMemo(() => {
-    const merged = [...initialIncidents];
-    wsIncidents.forEach((wsInc) => {
-      const idx = merged.findIndex((i) => i.id === wsInc.id);
-      if (idx !== -1) merged[idx] = wsInc;
-      else merged.push(wsInc);
-    });
-    return merged.filter((i) => !resolvedIds.has(i.id) && i.status !== 'Resolved');
-  }, [initialIncidents, wsIncidents, resolvedIds]);
+  const noisePoints = (apiNoisePoints && apiNoisePoints.length > 0) ? apiNoisePoints : STATIC_MOCK_NOISE_POINTS;
 
   const clearPublicOverlays = useCallback(() => {
     const map = mapRef.current;
@@ -194,29 +94,22 @@ export function MapViewport() {
     });
   }, [liveIncidents, clearPublicOverlays]);
 
-  // ── Ініціалізація карти ──────────────────────────────────────────────────
-
+  // ── Ініціалізація карти
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
-
     const map = L.map(mapContainerRef.current, {
-      center:      MAP_CONFIG.center,
-      zoom:        MAP_CONFIG.defaultZoom,
+      center: MAP_CONFIG.center,
+      zoom: MAP_CONFIG.defaultZoom,
       zoomControl: false,
     });
-
-    L.tileLayer(MAP_CONFIG.tileUrl, {
-      attribution: MAP_CONFIG.tileAttribution,
-      maxZoom:     MAP_CONFIG.maxZoom,
-    }).addTo(map);
-
+    L.tileLayer(MAP_CONFIG.tileUrl, { attribution: MAP_CONFIG.tileAttribution, maxZoom: MAP_CONFIG.maxZoom }).addTo(map);
     mapRef.current = map;
 
     return () => {
       clearPublicOverlays();
-      if (heatLayerRef.current)    map.removeLayer(heatLayerRef.current);
+      if (heatLayerRef.current) map.removeLayer(heatLayerRef.current);
       if (markersGroupRef.current) map.removeLayer(markersGroupRef.current);
-      if (noiseLayerRef.current)   map.removeLayer(noiseLayerRef.current);
+      if (noiseLayerRef.current) map.removeLayer(noiseLayerRef.current);
       map.remove();
       mapRef.current = null;
       heatLayerRef.current = null;
@@ -225,22 +118,17 @@ export function MapViewport() {
     };
   }, [clearPublicOverlays]);
 
-  // ── Публічні зони ────────────────────────────────────────────────────────
-
+  // ── Публічні зони
   useEffect(() => {
     if (isAdmin || activeLayer !== 'heatmap') { clearPublicOverlays(); return; }
     drawPublicZones();
   }, [liveIncidents, isAdmin, drawPublicZones, clearPublicOverlays, activeLayer]);
 
-  // ── Маркери (адмін) ──────────────────────────────────────────────────────
-
+  // ── Маркери (адмін)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
-    if (!markersGroupRef.current) {
-      markersGroupRef.current = L.layerGroup().addTo(map);
-    }
+    if (!markersGroupRef.current) markersGroupRef.current = L.layerGroup().addTo(map);
     const group = markersGroupRef.current;
 
     if (!isAdmin) { group.clearLayers(); return; }
@@ -261,11 +149,8 @@ export function MapViewport() {
       const colorClass = MARKER_COLORS[incident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500';
       const customIcon = L.divIcon({
         className: 'custom-div-icon cursor-pointer',
-        html: `<div class="relative w-3 h-3">
-          <div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div>
-          <div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div>
-        </div>`,
-        iconSize:   [12, 12],
+        html: `<div class="relative w-3 h-3"><div class="w-3 h-3 ${colorClass} rounded-full shadow-lg animate-pulse"></div><div class="absolute w-6 h-6 ${colorClass} rounded-full opacity-20 -top-1.5 -left-1.5"></div></div>`,
+        iconSize: [12, 12],
         iconAnchor: [6, 6],
       });
 
@@ -276,12 +161,10 @@ export function MapViewport() {
     });
   }, [liveIncidents, isAdmin]);
 
-  // ── Heatmap (адмін) ──────────────────────────────────────────────────────
-
+  // ── Heatmap (адмін)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-
     if (activeLayer !== 'heatmap' || !isAdmin || liveIncidents.length === 0) {
       if (heatLayerRef.current) { map.removeLayer(heatLayerRef.current); heatLayerRef.current = null; }
       return;
@@ -292,13 +175,13 @@ export function MapViewport() {
       .map((i: any) => [i.lat ?? i.latitude, i.lng ?? i.longitude, i.intensity]);
 
     if (heatLayerRef.current) map.removeLayer(heatLayerRef.current);
-
     heatLayerRef.current = (L as any).heatLayer(heatPoints, {
       radius: 50, blur: 35, maxZoom: 13, max: 1.0,
       gradient: { 0.2: '#2563eb', 0.4: '#22c55e', 0.6: '#eab308', 0.8: '#f97316', 1.0: '#ef4444' },
     }).addTo(map);
   }, [liveIncidents, activeLayer, isAdmin]);
 
+  // ── Noise Grid
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -307,183 +190,56 @@ export function MapViewport() {
       if (noiseLayerRef.current) { map.removeLayer(noiseLayerRef.current); noiseLayerRef.current = null; }
       return;
     }
-    const districtPolygon = turf.polygon(
-  districtGeoJson.features[0].geometry.coordinates
-);
+    const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);
     const bbox = turf.bbox(districtPolygon);
     const rawGrid = turf.hexGrid(bbox, 0.45, { units: 'kilometers' });
 
     const clippedFeatures: Feature<Polygon | MultiPolygon>[] = [];
-
     for (const hex of rawGrid.features) {
-      const clipped = turf.intersect(
-        turf.featureCollection([hex, districtPolygon])
-      );
+      const clipped = turf.intersect(turf.featureCollection([hex, districtPolygon]));
       if (!clipped) continue;
       const center = turf.centerOfMass(hex);
       const [lng, lat] = center.geometry.coordinates;
 
       const db = idwInterpolate(lng, lat, noisePoints, 2.5, 2, 38);
-
       clipped.properties = { db };
       clippedFeatures.push(clipped as Feature<Polygon | MultiPolygon>);
     }
 
-    const finalGrid = turf.featureCollection(clippedFeatures);
-
     if (noiseLayerRef.current) map.removeLayer(noiseLayerRef.current);
 
-    noiseLayerRef.current = L.geoJSON(finalGrid as any, {
+    noiseLayerRef.current = L.geoJSON(turf.featureCollection(clippedFeatures) as any, {
       style: (feature: any) => {
         const db: number = feature?.properties?.db ?? 38;
         return {
-          fillColor:   dbToColor(db),
+          fillColor: dbToColor(db),
           fillOpacity: dbToOpacity(db),
-          color:       '#0f0f17',
-          weight:      1,
-          opacity:     0.5,
+          color: '#0f0f17',
+          weight: 1,
+          opacity: 0.5,
         };
       },
     }).addTo(map);
-
   }, [noisePoints, activeLayer]);
 
-  useEffect(() => {
-    requestAnimationFrame(() => mapRef.current?.invalidateSize());
-  }, [isAdmin]);
-
-  const handleResolve = async () => {
-    if (!selectedIncident) return;
-    setIsResolving(true);
-    try {
-      await updateIncidentStatus(selectedIncident.id, 'RESOLVED');
-      setResolvedIds((prev) => { const s = new Set(prev); s.add(selectedIncident.id); return s; });
-      setSelectedIncident(null);
-    } catch (e: any) {
-      console.error(e);
-      alert(e.message || 'Помилка при оновленні статусу інциденту');
-    } finally {
-      setIsResolving(false);
-    }
-  };
+  useEffect(() => { requestAnimationFrame(() => mapRef.current?.invalidateSize()); }, [isAdmin]);
 
   return (
     <div className="flex-1 bg-[#0f0f17] relative overflow-hidden h-full w-full min-w-[100px] min-h-[100px]">
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Панель оператора */}
-      {selectedIncident && isAdmin && (
-        <div className="absolute top-4 right-16 z-[600] w-72 bg-[#0a0a0f]/95 backdrop-blur-md border border-[#1a1a24] rounded-xl p-4 shadow-2xl">
-          <div className="flex justify-between items-start mb-4">
-            <div>
-              <div className="flex items-center gap-2 mb-1">
-                <div className={`w-2 h-2 rounded-full ${MARKER_COLORS[selectedIncident.type as keyof typeof MARKER_COLORS] || 'bg-gray-500'}`} />
-                <h3 className="text-white font-semibold text-sm uppercase">{selectedIncident.type}</h3>
-              </div>
-              <p className="text-[#71717a] text-[10px] font-mono tracking-wider">ID: {selectedIncident.id.split('-')[0]}</p>
-            </div>
-            <button onClick={() => setSelectedIncident(null)} className="text-[#71717a] hover:text-white transition-colors">
-              <X size={18} />
-            </button>
-          </div>
-
-          <div className="space-y-2 mb-5">
-            {[
-              { label: 'Рівень довіри:', value: `${Math.round(selectedIncident.intensity * 100)}%`, cls: 'text-emerald-400 font-semibold' },
-              { label: 'Широта:',       value: (selectedIncident.lat ?? selectedIncident.latitude)?.toFixed(6),  cls: 'text-white font-mono' },
-              { label: 'Довгота:',      value: (selectedIncident.lng ?? selectedIncident.longitude)?.toFixed(6), cls: 'text-white font-mono' },
-            ].map(({ label, value, cls }) => (
-              <div key={label} className="flex justify-between items-center bg-[#1a1a24]/50 rounded px-2 py-1.5 text-xs">
-                <span className="text-[#71717a]">{label}</span>
-                <span className={cls}>{value}</span>
-              </div>
-            ))}
-          </div>
-
-          <button
-            onClick={handleResolve}
-            disabled={isResolving}
-            className="w-full bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/50 disabled:opacity-50 text-emerald-400 text-xs font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-2"
-          >
-            <CheckCircle size={14} />
-            {isResolving ? 'Закриття...' : 'Позначити як Вирішено'}
-          </button>
-        </div>
+      {isAdmin && (
+        <IncidentDetailPanel
+          selectedIncident={selectedIncident}
+          setSelectedIncident={setSelectedIncident}
+          handleResolve={handleResolve}
+          isResolving={isResolving}
+        />
       )}
 
-      {/* Кнопки керування шарами */}
-      <div className="absolute top-4 left-4 z-[500] flex flex-col gap-2">
-        <button
-          onClick={() => setActiveLayer(activeLayer === 'heatmap' ? 'none' : 'heatmap')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-lg ${
-            activeLayer === 'heatmap'
-              ? 'bg-[#2563eb] text-white'
-              : 'bg-[#1a1a24] text-[#71717a] hover:text-white border border-[#333]'
-          }`}
-        >
-          <Layers size={14} />
-          Теплова карта
-        </button>
-
-        <button
-          onClick={() => setActiveLayer(activeLayer === 'noisemap' ? 'none' : 'noisemap')}
-          className={`px-3 py-2 rounded-lg text-xs font-semibold flex items-center gap-2 transition-colors shadow-lg ${
-            activeLayer === 'noisemap'
-              ? 'bg-[#8b5cf6] text-white'
-              : 'bg-[#1a1a24] text-[#71717a] hover:text-white border border-[#333]'
-          }`}
-        >
-          <Radio size={14} />
-          Карта шуму
-        </button>
-      </div>
-
-      {/* Зум */}
-      <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
-        <button onClick={() => mapRef.current?.zoomIn()}  className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn  size={18} /></button>
-        <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
-      </div>
-
-      {/* Легенда */}
-      <div className="absolute bottom-4 left-4 z-[500] bg-[#0a0a0f]/90 backdrop-blur-sm border border-[#1a1a24] rounded-lg p-3 pointer-events-none shadow-lg">
-        <div className="text-xs text-[#71717a] mb-2">Легенда карти</div>
-
-        {activeLayer !== 'noisemap' && (
-          <div className="space-y-1.5">
-            {[
-              { color: 'bg-red-500',    label: 'UAV Detected' },
-              { color: 'bg-red-600',    label: 'Explosion'    },
-              { color: 'bg-amber-500',  label: 'Siren'        },
-              { color: 'bg-yellow-500', label: 'Generator'    },
-            ].map(({ color, label }) => (
-              <div key={label} className="flex items-center gap-2">
-                <div className={`w-2 h-2 ${color} rounded-full`} />
-                <span className="text-xs text-white">{label}</span>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {activeLayer === 'noisemap' && (
-          <>
-            <div className="text-[10px] text-[#71717a] mb-2">Рівень шуму (дБ)</div>
-            <div className="space-y-1.5">
-              {[
-                { color: 'bg-green-500',  label: '< 45 — тиша'     },
-                { color: 'bg-blue-500',   label: '45–55 — норма'    },
-                { color: 'bg-yellow-500', label: '55–65 — помітно'  },
-                { color: 'bg-orange-500', label: '65–75 — гучно'    },
-                { color: 'bg-red-500',    label: '> 75 — небезпека' },
-              ].map(({ color, label }) => (
-                <div key={label} className="flex items-center gap-2">
-                  <div className={`w-2 h-2 ${color} rounded`} />
-                  <span className="text-xs text-white">{label}</span>
-                </div>
-              ))}
-            </div>
-          </>
-        )}
-      </div>
+      <LayerControls activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
+      <ZoomControls mapRef={mapRef} />
+      <MapLegend activeLayer={activeLayer} />
     </div>
   );
 }
