@@ -12,7 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLiveIncidents } from '../hooks/useLiveIncidents';
 import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
-import { dbToColor, dbToOpacity, idwInterpolate, intensityToRgb, ZONE_DEG } from '../utils/mapUtils';
+import { dbToColor, dbToOpacity, idwInterpolate, intensityToRgb, ZONE_DEG } from '../constants/mapUtils';
 
 import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
 import { LayerControls } from './map-ui/LayerControls';
