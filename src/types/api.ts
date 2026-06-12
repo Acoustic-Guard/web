@@ -50,8 +50,8 @@ export function mapApiIncident(raw: ApiIncident): IncidentMarker {
 
 export function mapApiTelemetry(raw: ApiTelemetry): MetricCardProps[] {
   return [
-    { label: 'Active Sensor Nodes',    value: raw.activeNodes,  unit: 'nodes', status: raw.nodesStatus,   icon: null },
-    { label: 'Avg. System Latency',    value: raw.avgLatencyMs, unit: 'ms',    status: raw.latencyStatus, icon: null },
-    { label: 'Background Noise Level', value: raw.noiseLevelDb, unit: 'dB',    status: raw.noiseStatus,   icon: null },
+    { label: 'Active Sensor Nodes',    value: raw.activeNodes ?? 0,  unit: 'nodes', status: raw.nodesStatus,   icon: null },
+    { label: 'Avg. System Latency',    value: raw.avgLatencyMs ?? 0, unit: 'ms',    status: raw.latencyStatus, icon: null },
+    { label: 'Background Noise Level', value: raw.noiseLevelDb ?? 0, unit: 'dB',    status: raw.noiseStatus,   icon: null },
   ];
 }

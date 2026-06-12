@@ -43,6 +43,8 @@ export function useTelemetry(): UseTelemetryResult {
   }, [user]);
 
   const handleNewTelemetry = useCallback((newMetrics: MetricCardProps[]) => {
+    // Apply WebSocket payload exactly as REST fetcher does
+    // Backend sends complete payloads, so we replace state entirely
     setMetrics(newMetrics);
   }, []);
 

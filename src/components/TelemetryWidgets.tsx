@@ -19,6 +19,7 @@ const STATUS_VALUE: Record<Status, string> = {
 };
 
 function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
+  const displayValue = value ?? 0;
   return (
     <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-4">
       <div className="flex items-start justify-between mb-3">
@@ -28,7 +29,7 @@ function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardP
         </div>
       </div>
       <div className="flex items-baseline gap-1">
-        <span className={`text-2xl font-semibold ${STATUS_VALUE[status]}`}>{value}</span>
+        <span className={`text-2xl font-semibold ${STATUS_VALUE[status]}`}>{displayValue}</span>
         {unit && <span className="text-sm text-[#71717a]">{unit}</span>}
       </div>
       <div className="text-xs text-[#71717a] mt-1">{label}</div>
@@ -48,6 +49,12 @@ export function TelemetryWidgets() {
   if (error) return (
     <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-red-400">
       Помилка: {error}
+    </div>
+  );
+
+  if (!metrics || metrics.length === 0) return (
+    <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-[#71717a]">
+      Немає даних телеметрії
     </div>
   );
 
