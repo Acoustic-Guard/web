@@ -19,6 +19,7 @@ import { LayerControls } from './map-ui/LayerControls';
 import { ZoomControls } from './map-ui/ZoomControls';
 import { MapLegend } from './map-ui/MapLegend';
 import { LocationControl } from './map-ui/LocationControl';
+import { NoiseStatusPanel } from './map-ui/NoiseStatusPanel';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
 export function MapViewport() {
@@ -32,6 +33,8 @@ export function MapViewport() {
   const publicOverlaysRef = useRef<L.SVGOverlay[]>([]);
 
   const [activeLayer, setActiveLayer] = useState<'heatmap' | 'noisemap' | 'none'>('heatmap');
+  const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationPermission, setLocationPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
 
   const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
   const { points: apiNoisePoints } = useNoiseMap();
@@ -264,8 +267,20 @@ export function MapViewport() {
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn size={18} /></button>
         <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
 
-        <LocationControl mapRef={mapRef} />
+        <LocationControl
+          mapRef={mapRef}
+          onLocationChange={(coords) => {
+            setUserLocation(coords);
+            if (coords) setLocationPermission('granted');
+          }}
+          onPermissionDenied={() => setLocationPermission('denied')}
+        />
       </div>
+      <NoiseStatusPanel
+        userLocation={userLocation}
+        noisePoints={noisePoints}
+        locationPermission={locationPermission}
+      />
     </div>
   );
 }
