@@ -275,21 +275,26 @@ export function MapViewport() {
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn size={18} /></button>
         <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
 
-        <LocationControl
+        {!isAdmin && <LocationControl
           mapRef={mapRef}
           onLocationChange={(coords) => {
             setUserLocation(coords);
             if (coords) setLocationPermission('granted');
           }}
           onPermissionDenied={() => setLocationPermission('denied')}
-        />
+        />}
       </div>
-      <IncidentToast toast={toast} onDismiss={dismiss} />
-      <NoiseStatusPanel
-        userLocation={userLocation}
-        noisePoints={noisePoints}
-        locationPermission={locationPermission}
-      />
+
+      {!isAdmin && (
+        <>
+          <IncidentToast toast={toast} onDismiss={dismiss} />
+          <NoiseStatusPanel
+            userLocation={userLocation}
+            noisePoints={noisePoints}
+            locationPermission={locationPermission}
+          />
+        </>
+      )}
     </div>
   );
 }
