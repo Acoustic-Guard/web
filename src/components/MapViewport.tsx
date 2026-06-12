@@ -8,6 +8,7 @@ import type { Feature, Polygon, MultiPolygon } from 'geojson';
 import districtGeoJson from '../constants/districtGeoJson.json';
 
 import { useNoiseMap } from '../hooks/useNoiseMap';
+import { useIncidentStream } from '../hooks/useIncidentStream';
 import { useAuth } from '../hooks/useAuth';
 import { useLiveIncidents } from '../hooks/useLiveIncidents';
 import { MAP_CONFIG } from '../constants/mapConfig';
@@ -20,6 +21,8 @@ import { ZoomControls } from './map-ui/ZoomControls';
 import { MapLegend } from './map-ui/MapLegend';
 import { LocationControl } from './map-ui/LocationControl';
 import { NoiseStatusPanel } from './map-ui/NoiseStatusPanel';
+import { IncidentToast } from './map-ui/IncidentToast';
+import { useNearbyIncidentToast } from '../hooks/useNearbyIncidentToast';
 import { ZoomIn, ZoomOut } from 'lucide-react';
 
 export function MapViewport() {
@@ -37,8 +40,13 @@ export function MapViewport() {
   const [locationPermission, setLocationPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
 
   const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
+  const { toast, notify, dismiss } = useNearbyIncidentToast(userLocation);
+
+  // Слухаємо нові інциденти для сповіщень (окремо від useLiveIncidents)
+  useIncidentStream({ onIncident: notify });
   const { points: apiNoisePoints } = useNoiseMap();
   const noisePoints = apiNoisePoints || [];
+
 
   const baseClippedGrid = useMemo(() => {
     const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);
@@ -276,6 +284,7 @@ export function MapViewport() {
           onPermissionDenied={() => setLocationPermission('denied')}
         />
       </div>
+      <IncidentToast toast={toast} onDismiss={dismiss} />
       <NoiseStatusPanel
         userLocation={userLocation}
         noisePoints={noisePoints}
