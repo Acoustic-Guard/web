@@ -1,7 +1,13 @@
 import * as turf from '@turf/turf';
 
+/**
+ * Базовий крок у градусах для розрахунку географічної сітки або буферних зон.
+ */
 export const ZONE_DEG = 0.045;
 
+/**
+ * Зіставляє рівень шуму (дБ) з HEX-кольором для відображення інтенсивності на мапі.
+ */
 export function dbToColor(db: number): string {
   if (db >= 75) return '#ef4444';
   if (db >= 65) return '#f97316';
@@ -10,12 +16,28 @@ export function dbToColor(db: number): string {
   return '#22c55e';
 }
 
+/**
+ * Розраховує динамічну прозорість полігонів залежно від рівня шуму.
+ * Забезпечує кращу видимість фонових елементів для зон з низьким рівнем шуму.
+ */
 export function dbToOpacity(db: number): number {
   // Higher minimum opacity for low dB values to match legend brightness
   const minOpacity = db < 45 ? 0.65 : 0.35;
   return Math.min(0.85, minOpacity + ((db - 30) / 55) * 0.5);
 }
 
+/**
+ * Виконує просторову інтерполяцію методом обернених зважених відстаней (IDW).
+ * Дозволяє оцінити рівень шуму в довільній точці мапи на основі показників 
+ * найближчих реальних сенсорів, формуючи безперервне акустичне поле.
+ * * @param hexCenterLng - Довгота цільової точки.
+ * @param hexCenterLat - Широта цільової точки.
+ * @param noisePoints - Масив доступних точок телеметрії з показниками дБ.
+ * @param influenceRadiusKm - Максимальний радіус впливу сенсора у кілометрах.
+ * @param p - Ступінь згасання (power parameter).
+ * @param baseDb - Фоновий рівень шуму за замовчуванням.
+ * @returns Обчислене значення шуму в децибелах.
+ */
 export function idwInterpolate(
   hexCenterLng: number,
   hexCenterLat: number,
@@ -49,6 +71,10 @@ export function idwInterpolate(
   return weightedSum / totalWeight;
 }
 
+/**
+ * Перетворює нормалізоване значення інтенсивності загрози на RGB-рядок 
+ * для використання у Canvas API (наприклад, для радіальних градієнтів).
+ */
 export function intensityToRgb(intensity: number): string {
   if (intensity >= 0.8) return '239,68,68';
   if (intensity >= 0.6) return '249,115,22';

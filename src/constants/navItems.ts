@@ -1,6 +1,10 @@
 import { Map, BarChart3, Server } from 'lucide-react';
 import type { NavItem } from '../types/navigation';
 
+/**
+ * Конфігурація елементів головного навігаційного меню системи.
+ * Пов'язує маршрутизацію (id) з відповідними іконками (Lucide) та підписами.
+ */
 export const NAV_ITEMS: NavItem[] = [
   { id: 'dashboard', label: 'Live Map', icon: Map },
   { id: 'analytics', label: 'Analytics', icon: BarChart3 },

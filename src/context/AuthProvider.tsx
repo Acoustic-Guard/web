@@ -3,6 +3,14 @@ import { AuthContext } from './AuthContext';
 import type { AuthUser, UserRole } from '../types/auth'; 
 import { loginRequest } from '../services/AuthService';
 
+/**
+ * Компонент-провайдер для глобального стану авторизації.
+ * Відповідає за:
+ * 1. Ініціалізацію та персистенцію сесії з локального сховища (localStorage).
+ * 2. Управління життєвим циклом JWT-токена.
+ * 3. Глобальне перехоплення події 'auth:unauthorized' для автоматичного 
+ * виходу з системи у разі закінчення терміну дії токена (401 Unauthorized).
+ */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
     const token = localStorage.getItem('jwt_token');
