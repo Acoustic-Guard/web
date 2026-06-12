@@ -1,3 +1,6 @@
+/**
+ * Маркер інциденту для відображення зафіксованих загроз на мапі.
+ */
 export interface IncidentMarker {
   id: string;
   lat: number;
@@ -7,7 +10,9 @@ export interface IncidentMarker {
   status?: string;
 }
 
-
+/**
+ * Модель історичного запису про підтверджений або досліджений інцидент.
+ */
 export interface HistoricalIncident {
   id: string;
   datetime: string;
@@ -17,8 +22,9 @@ export interface HistoricalIncident {
   status: 'Resolved' | 'Investigating' | 'Confirmed';
 }
 
-
-
+/**
+ * Модель оперативного попередження про поточну акустичну загрозу.
+ */
 export interface Alert {
   id: string;
   type: 'UAV' | 'Siren' | 'Explosion' | 'Generator';
@@ -27,8 +33,9 @@ export interface Alert {
   location: string;
 }
 
-
-
+/**
+ * Властивості компонента для відображення картки попередження.
+ */
 export interface AlertCardProps {
   alert: Alert;
 }

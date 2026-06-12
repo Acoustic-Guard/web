@@ -1,6 +1,9 @@
 import type { Alert, IncidentMarker } from './incidents';
 import type { MetricCardProps } from './telemetry';
 
+/**
+ * DTO для попередження про загрозу, отриманого з API.
+ */
 export interface ApiAlert {
   id:         string;
   threatType: string;
@@ -9,6 +12,9 @@ export interface ApiAlert {
   detectedAt: string;
 }
 
+/**
+ * DTO для інциденту (наприклад, виявлення БПЛА чи вибуху), отриманого з API.
+ */
 export interface ApiIncident {
   id:        string;
   latitude:  number;
@@ -18,6 +24,9 @@ export interface ApiIncident {
   status:    string;
 }
 
+/**
+ * DTO для телеметричних даних акустичних сенсорів, отриманого з API.
+ */
 export interface ApiTelemetry {
   activeNodes:    number;
   avgLatencyMs:   number;
@@ -27,6 +36,11 @@ export interface ApiTelemetry {
   noiseStatus:    'normal' | 'warning' | 'critical';
 }
 
+/**
+ * Перетворює DTO попередження на клієнтську модель Alert.
+ * @param raw - Сирі дані з API.
+ * @returns Форматований об'єкт Alert.
+ */
 export function mapApiAlert(raw: ApiAlert): Alert {
   return {
     id:         raw.id,
@@ -37,6 +51,11 @@ export function mapApiAlert(raw: ApiAlert): Alert {
   };
 }
 
+/**
+ * Перетворює DTO інциденту на маркер для мапи.
+ * @param raw - Сирі дані з API.
+ * @returns Форматований об'єкт IncidentMarker.
+ */
 export function mapApiIncident(raw: ApiIncident): IncidentMarker {
   return {
     id:        raw.id,
@@ -48,6 +67,11 @@ export function mapApiIncident(raw: ApiIncident): IncidentMarker {
   };
 }
 
+/**
+ * Перетворює DTO телеметрії на масив властивостей для карток метрик.
+ * @param raw - Сирі дані з API.
+ * @returns Масив MetricCardProps для UI.
+ */
 export function mapApiTelemetry(raw: ApiTelemetry): MetricCardProps[] {
   return [
     { label: 'Active Sensor Nodes',    value: raw.activeNodes ?? 0,  unit: 'nodes', status: raw.nodesStatus,   icon: null },
