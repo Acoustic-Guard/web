@@ -16,6 +16,11 @@ interface UseNoiseMapResult {
 
 const REFRESH_INTERVAL_MS = 30_000;
 
+/**
+ * Хук для завантаження акустичної телеметрії (рівнів шуму в децибелах) 
+ * з подальшою передачею в шар візуалізації мапи. Реалізує періодичне оновлення 
+ * даних (кожні 30 секунд) через механізм polling.
+ */
 export function useNoiseMap(): UseNoiseMapResult {
   const [points, setPoints]   = useState<NoisePoint[]>([]);
   const [loading, setLoading] = useState(false);

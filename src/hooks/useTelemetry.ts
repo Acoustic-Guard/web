@@ -10,6 +10,11 @@ interface UseTelemetryResult {
   error:   string | null;
 }
 
+/**
+ * Централізований хук управління станом сенсорної мережі.
+ * Ініціалізує загальну картину через REST API, після чого делегує оновлення 
+ * WebSocket-з'єднанню для забезпечення мінімальної затримки відображення (low latency).
+ */
 export function useTelemetry(): UseTelemetryResult {
   const { user } = useAuth();
   const [metrics, setMetrics] = useState<MetricCardProps[]>([]);

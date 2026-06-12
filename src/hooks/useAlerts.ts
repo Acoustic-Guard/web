@@ -12,6 +12,12 @@ interface UseAlertsResult {
 
 const MAX_ALERTS = 100;
 
+/**
+ * Кастомний хук для управління станом оперативних попереджень.
+ * Відповідає за початкове завантаження історичних даних через REST API 
+ * та автоматичне оновлення списку при надходженні нових подій через WebSocket.
+ * * @returns Об'єкт зі списком попереджень, станом завантаження та можливими помилками.
+ */
 export function useAlerts(): UseAlertsResult {
   const { user } = useAuth();
   const [alerts, setAlerts]   = useState<Alert[]>([]);

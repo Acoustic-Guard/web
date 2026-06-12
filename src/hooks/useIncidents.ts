@@ -13,6 +13,11 @@ interface UseIncidentsResult {
 
 const MAX_INCIDENTS = 500;
 
+/**
+ * Хук для завантаження масиву зафіксованих інцидентів.
+ * Використовує рольову модель доступу (RBAC): адміністратори отримують повні дані, 
+ * гості — публічну версію. Інтегрує WebSocket-стрім для миттєвого оновлення статусу інцидентів.
+ */
 export function useIncidents(): UseIncidentsResult {
   const { isAdmin } = useAuth();
   const [incidents, setIncidents] = useState<IncidentMarker[]>([]);

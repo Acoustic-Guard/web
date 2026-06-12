@@ -4,6 +4,13 @@ import type { IncidentMarker } from '../types/incidents';
 const RADIUS_KM = 4;
 const TOAST_DURATION_MS = 6000;
 
+/**
+ * Обчислює дистанцію між користувачем та зафіксованим інцидентом 
+ * з використанням математичної формули гаверсину (Haversine formula).
+ * * @param lat1, lng1 - Координати першої точки.
+ * @param lat2, lng2 - Координати другої точки.
+ * @returns Відстань у кілометрах.
+ */
 function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
   const R = 6371;
   const dLat = ((lat2 - lat1) * Math.PI) / 180;
@@ -23,6 +30,12 @@ export interface ToastIncident {
   intensity: number;
 }
 
+/**
+ * Геопросторовий хук для системи сповіщень.
+ * Відстежує появу нових інцидентів і генерує спливаюче повідомлення (Toast), 
+ * лише якщо загроза зафіксована у визначеному радіусі від поточної локації користувача.
+ * * @param userLocation - Поточні географічні координати клієнта.
+ */
 export function useNearbyIncidentToast(userLocation: { lat: number; lng: number } | null) {
   const [toast, setToast] = useState<ToastIncident | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);

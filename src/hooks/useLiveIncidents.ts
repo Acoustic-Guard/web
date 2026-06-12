@@ -4,6 +4,11 @@ import { useIncidents } from './useIncidents';
 import { useIncidentStream } from './useIncidentStream';
 import { updateIncidentStatus } from '../services/incidentsService';
 
+/**
+ * Комплексний хук для злиття історичних інцидентів з поточними (live) даними.
+ * Керує локальним станом вирішених інцидентів (resolvedIds) для оптимістичного 
+ * оновлення UI без необхідності повторного запиту до сервера.
+ */
 export function useLiveIncidents() {
   const [selectedIncident, setSelectedIncident] = useState<any | null>(null);
   const [resolvedIds, setResolvedIds] = useState<Set<string>>(new Set());

@@ -8,10 +8,21 @@ import type { MetricCardProps } from '../types/telemetry';
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
+/**
+ * Властивості конфігурації для підключення потоку телеметрії.
+ * @param onTelemetry - Коллбек-функція, яка викликається при отриманні та успішному парсингу нових метрик.
+ */
 interface UseTelemetryStreamOptions {
   onTelemetry: (metrics: MetricCardProps[]) => void;
 }
 
+/**
+ * Хук для встановлення STOMP-з'єднання та прослуховування потоку телеметрії у реальному часі.
+ * Застосовує патерн збереження посилання (useRef) на коллбек, що дозволяє уникати 
+ * зайвих перепідключень WebSocket при оновленні компонента. 
+ * Забезпечує безпечний парсинг вхідних повідомлень (try/catch) та коректне 
+ * звільнення ресурсів (unsubscribe) при розмонтуванні.
+ */
 export function useTelemetryStream({ onTelemetry }: UseTelemetryStreamOptions) {
   const onTelemetryRef = useRef(onTelemetry);
   

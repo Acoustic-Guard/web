@@ -11,6 +11,11 @@ interface UseIncidentStreamOptions {
   onIncident: (incident: IncidentMarker) => void;
 }
 
+/**
+ * Підтримує активне STOMP-з'єднання для прослуховування нових інцидентів 
+ * (наприклад, виявлення БПЛА чи вибухів) у реальному часі від бекенду.
+ * * @param options.onIncident - Коллбек для обробки вхідного DTO інциденту.
+ */
 export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
   const onIncidentRef = useRef(onIncident);
   
@@ -20,7 +25,6 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
 
   useEffect(() => {
     if (IS_MOCK) {
-      // Заглушка: емулює новий інцидент кожні 12 секунд
       const MOCK_TYPES = ['UAV', 'Explosion', 'Siren', 'Generator'] as const;
       const interval = setInterval(() => {
         const mockRaw: ApiIncident = {

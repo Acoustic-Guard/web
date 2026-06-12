@@ -2,6 +2,12 @@ import { useState, useEffect, useMemo } from 'react';
 import { getAnalytics, type AnalyticsData } from '../services/analyticsService';
 import { THREAT_COLORS } from '../constants/analyticsUtils';
 
+/**
+ * Кастомний хук для отримання та агрегації аналітичних даних.
+ * Реалізує механізм періодичного опитування (polling) бекенду для підтримки 
+ * актуальності метрик, а також керує станом фільтрів часових діапазонів.
+ * Використовує useMemo для оптимізації обчислень розподілу загроз.
+ */
 export function useAnalytics() {
   const [timeRange, setTimeRange] = useState('24h');
   const [appliedStart, setAppliedStart] = useState('');

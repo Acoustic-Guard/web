@@ -3,40 +3,55 @@ import L from 'leaflet';
 import * as d3hexbin from 'd3-hexbin';
 import type { NoisePoint } from '../hooks/useNoiseMap';
 
-// ── dB thresholds → colour ──────────────────────────────────────────────────
+/**
+ * Конвертує рівень шуму в децибелах (дБ) у відповідний HEX-колір для індикації загрози.
+ * @param db - Рівень шуму.
+ * @returns Рядок з HEX-кодом кольору.
+ */
 function dbToColor(db: number): string {
-  if (db >= 75) return '#ef4444'; // red-500
-  if (db >= 65) return '#f97316'; // orange-500
-  if (db >= 55) return '#eab308'; // yellow-500
-  if (db >= 45) return '#22c55e'; // green-500
-  return '#06b6d4';               // cyan-500
+  if (db >= 75) return '#ef4444';
+  if (db >= 65) return '#f97316';
+  if (db >= 55) return '#eab308';
+  if (db >= 45) return '#22c55e';
+  return '#06b6d4';              
 }
 
+/**
+ * Розраховує динамічну прозорість заливки на основі рівня шуму. 
+ * Зони з вищою інтенсивністю звуку мають більшу непрозорість.
+ * @param db - Рівень шуму.
+ * @returns Значення opacity (від 0.25 до 0.75).
+ */
 function dbToOpacity(db: number): number {
   return Math.min(0.75, 0.25 + ((db - 30) / 55) * 0.5);
 }
 
-// ── avg dB of a hexbin bin ──────────────────────────────────────────────────
+/**
+ * Обчислює середній рівень акустичного шуму для гексагонального кластера (біна).
+ * @param bin - Масив точок даних, що потрапили у межі одного полігону.
+ * @returns Середнє значення дБ.
+ */
 function binAvgDb(bin: any[]): number {
   if (!bin.length) return 0;
   return bin.reduce((sum, p) => sum + p[2], 0) / bin.length;
 }
 
-// ── Layer class ─────────────────────────────────────────────────────────────
+/**
+ * Кастомний шар Leaflet для просторової агрегації та візуалізації телеметрії.
+ * Використовує D3.js для групування координат (Hexbin) та рендерить результат 
+ * як оптимізований SVG-оверлей поверх базової мапи.
+ */
 export class NoiseHexLayer extends L.Layer {
   private _points: NoisePoint[] = [];
   private _svg: SVGSVGElement | null = null;
   private _container: HTMLElement | null = null;
 
-  /** Радіус кожної соти в пікселях */
   private readonly _hexRadius = 28;
 
   constructor(points: NoisePoint[]) {
     super();
     this._points = points;
   }
-
-  // ── Leaflet lifecycle ────────────────────────────────────────────────────
 
   onAdd(map: L.Map): this {
     this._container = map.getPanes().overlayPane;
@@ -60,15 +75,11 @@ export class NoiseHexLayer extends L.Layer {
     return this;
   }
 
-  // ── Public API ────────────────────────────────────────────────────────────
-
   setPoints(points: NoisePoint[]): this {
     this._points = points;
     this._redraw();
     return this;
   }
-
-  // ── Drawing ───────────────────────────────────────────────────────────────
 
   private _redraw(): void {
     const map = this._map as L.Map | undefined;
@@ -76,18 +87,15 @@ export class NoiseHexLayer extends L.Layer {
 
     const svg = this._svg;
 
-    // Очищаємо попередні соти
     while (svg.firstChild) svg.removeChild(svg.firstChild);
 
     if (!this._points.length) return;
 
-    // latLngToLayerPoint вже повертає координати відносно контейнера overlayPane!
     const projected = this._points.map((p) => {
       const px = map.latLngToLayerPoint([p.latitude, p.longitude]);
       return [px.x, px.y, p.db];
     });
 
-    // Будуємо сітку
     const binGen = (d3hexbin.hexbin as any)()
       .radius(this._hexRadius)
       .x((d: any) => d[0])
@@ -96,8 +104,7 @@ export class NoiseHexLayer extends L.Layer {
     const bins = binGen(projected);
 
     const g = document.createElementNS('http://www.w3.org/2000/svg', 'g');
-    // Звідси ПРИБРАНО setAttribute('transform', ...), який "ламав" координати
-    svg.appendChild(g);
+     svg.appendChild(g);
 
     const hexPath = binGen.hexagon(); 
 
@@ -116,7 +123,6 @@ export class NoiseHexLayer extends L.Layer {
   }
 }
 
-// ── Factory ──────────────────────────────────────────────────────────────────
 export function noiseHexLayer(points: NoisePoint[]): NoiseHexLayer {
   return new NoiseHexLayer(points);
 }

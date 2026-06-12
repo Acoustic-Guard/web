@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useRef} from 'react';
 
 import { mapApiAlert, type ApiAlert } from '../types/api';
@@ -11,29 +12,12 @@ interface UseAlertStreamOptions {
   onAlert: (alert: Alert) => void;
 }
 
-// ─── Як підключити реальний WebSocket (STOMP / Spring Boot) ──────────────────
-//
-// 1. Встанови бібліотеку:
-//    npm install @stomp/stompjs
-//
-// 2. Заміни секцію "// TODO: STOMP" нижче на:
-//
-//    import { Client } from '@stomp/stompjs';
-//
-//    const client = new Client({
-//      brokerURL: API_CONFIG.WS_URL,
-//      onConnect: () => {
-//        client.subscribe(WS_TOPICS.alerts, (message) => {
-//          const raw: ApiAlert = JSON.parse(message.body);
-//          onAlert(mapApiAlert(raw));
-//        });
-//      },
-//    });
-//    client.activate();
-//    return () => client.deactivate();
-//
-// ─────────────────────────────────────────────────────────────────────────────
-
+/**
+ * Хук для встановлення та підтримки WebSocket (STOMP) з'єднання для отримання 
+ * потоку попереджень у реальному часі. Автоматично керує підпискою та відпискою 
+ * при монтуванні/розмонтуванні компонента.
+ * * @param options.onAlert - Коллбек, який викликається при отриманні нового попередження.
+ */
 export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
   const onAlertRef = useRef(onAlert);
   
