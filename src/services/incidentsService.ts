@@ -5,6 +5,10 @@ import type { IncidentMarker } from '../types/incidents';
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
+/**
+ * Отримує повний список інцидентів для авторизованих користувачів.
+ * @returns Масив маркерів інцидентів для мапи.
+ */
 export async function getIncidents(): Promise<IncidentMarker[]> {
   if (IS_MOCK) {
     await new Promise((r) => setTimeout(r, 300));
@@ -18,6 +22,10 @@ export async function getIncidents(): Promise<IncidentMarker[]> {
   return data.map(mapApiIncident);
 }
 
+/**
+ * Отримує публічний список інцидентів (не потребує авторизації).
+ * @returns Масив маркерів інцидентів для мапи.
+ */
 export async function getPublicIncidents(): Promise<IncidentMarker[]> {
   if (IS_MOCK) {
     await new Promise((r) => setTimeout(r, 300));
@@ -30,6 +38,11 @@ export async function getPublicIncidents(): Promise<IncidentMarker[]> {
   return data.map(mapApiIncident);
 }
 
+/**
+ * Оновлює статус конкретного інциденту.
+ * @param id - Унікальний ідентифікатор інциденту.
+ * @param status - Новий статус інциденту.
+ */
 export async function updateIncidentStatus(id: string, status: string): Promise<void> {
   const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
   if (IS_MOCK) return;

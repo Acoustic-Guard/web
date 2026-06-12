@@ -1,10 +1,16 @@
 import { fetchWithAuth, ENDPOINTS } from '../config/api';
 
+/**
+ * Модель розподілу загроз за їх типом для графіків.
+ */
 export interface ThreatDistribution {
   name: string;
   value: number;
 }
 
+/**
+ * Модель історичного запису інциденту для таблиць та аналітики.
+ */
 export interface HistoricalIncident {
   id: string;
   type: string;
@@ -15,6 +21,9 @@ export interface HistoricalIncident {
   longitude: number | null;
 }
 
+/**
+ * Точка часового ряду для відображення динаміки загроз у часі.
+ */
 export interface TimeSeriesPoint {
   timestamp: string;
   UAV: number;
@@ -23,6 +32,9 @@ export interface TimeSeriesPoint {
   Generator: number;
 }
 
+/**
+ * Комплексна модель аналітичних даних для дашборду.
+ */
 export interface AnalyticsData {
   totalIncidents: number;
   activeAlerts: number;
@@ -33,6 +45,13 @@ export interface AnalyticsData {
   timeSeries: TimeSeriesPoint[];
 }
 
+/**
+ * Завантажує агреговані аналітичні дані за вказаний період.
+ * @param range - Період (наприклад, '24h', '7d', 'custom').
+ * @param start - Початкова дата (для 'custom' періоду).
+ * @param end - Кінцева дата (для 'custom' періоду).
+ * @returns Об'єкт AnalyticsData з метриками та масивами для графіків.
+ */
 export async function getAnalytics(range: string = '24h', start?: string, end?: string): Promise<AnalyticsData> {
   let url = `${ENDPOINTS.analytics}`;
   

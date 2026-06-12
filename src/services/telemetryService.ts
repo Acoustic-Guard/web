@@ -13,6 +13,10 @@ const mockTelemetry: ApiTelemetry = {
   noiseStatus:   'normal',
 };
 
+/**
+ * Завантажує поточні телеметричні дані сенсорів та адаптує їх для відображення на UI.
+ * @returns Масив властивостей для карток метрик.
+ */
 export async function getTelemetry(): Promise<MetricCardProps[]> {
   if (IS_MOCK) {
     await new Promise((r) => setTimeout(r, 300));

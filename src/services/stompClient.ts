@@ -4,6 +4,11 @@ import { API_CONFIG } from '../config/api';
 let stompClient: Client | null = null;
 let connectionPromise: Promise<void> | null = null;
 
+/**
+ * Ініціалізує або повертає існуючий екземпляр STOMP клієнта для WebSocket з'єднання.
+ * Автоматично додає JWT токен до заголовків підключення.
+ * @returns Екземпляр Client від @stomp/stompjs.
+ */
 export function getStompClient(): Client {
   if (!stompClient) {
     const token = localStorage.getItem('jwt_token');
@@ -24,6 +29,10 @@ export function getStompClient(): Client {
   return stompClient;
 }
 
+/**
+ * Забезпечує активне з'єднання WebSocket. Якщо підключення в процесі, повертає існуючий Promise.
+ * @returns Promise, який вирішується після успішного підключення.
+ */
 export async function ensureConnected(): Promise<void> {
   const client = getStompClient();
   
@@ -53,6 +62,9 @@ export async function ensureConnected(): Promise<void> {
   return connectionPromise;
 }
 
+/**
+ * Коректно закриває WebSocket з'єднання та очищує екземпляр клієнта.
+ */
 export function disconnectStomp(): void {
   if (stompClient && stompClient.connected) {
     stompClient.deactivate();

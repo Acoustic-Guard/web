@@ -4,6 +4,13 @@ import type { AuthUser } from '../types/auth';
 
 const IS_MOCK = false;
 
+/**
+ * Виконує автентифікацію користувача через API.
+ * @param username - Логін користувача.
+ * @param password - Пароль.
+ * @returns Дані користувача включно з JWT токеном для подальших запитів.
+ * @throws {Error} Якщо логін або пароль невірні.
+ */
 export async function loginRequest(username: string, password: string): Promise<AuthUser & { token?: string }> {
   if (IS_MOCK) {
     console.log('Використовується мокова авторизація...');
@@ -26,6 +33,8 @@ export async function loginRequest(username: string, password: string): Promise<
   return await res.json(); 
 }
 
+/**
+ * Завершує сесію користувача.
+ */
 export function logoutRequest(): void {
-  // Тут буде POST /api/v1/auth/logout, якщо потрібно
 }
