@@ -12,7 +12,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useLiveIncidents } from '../hooks/useLiveIncidents';
 import { MAP_CONFIG } from '../constants/mapConfig';
 import { MARKER_COLORS } from '../constants/ThreatColors';
-import { dbToColor, dbToOpacity, idwInterpolate, intensityToRgb, ZONE_DEG } from '../constants/mapUtils';
+import { dbToColor, dbToOpacity, idwInterpolate } from '../constants/mapUtils';
 
 import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
 import { LayerControls } from './map-ui/LayerControls';
@@ -26,9 +26,9 @@ export function MapViewport() {
   const mapRef = useRef<L.Map | null>(null);
   const { isAdmin } = useAuth();
 
-  const heatLayerRef      = useRef<any>(null);
-  const markersGroupRef   = useRef<L.LayerGroup | null>(null);
-  const noiseLayerRef     = useRef<L.GeoJSON | null>(null);
+  const heatLayerRef = useRef<any>(null);
+  const markersGroupRef = useRef<L.LayerGroup | null>(null);
+  const noiseLayerRef = useRef<L.GeoJSON | null>(null);
   const publicOverlaysRef = useRef<L.SVGOverlay[]>([]);
 
   const [activeLayer, setActiveLayer] = useState<'heatmap' | 'noisemap' | 'none'>('heatmap');
@@ -43,21 +43,21 @@ export function MapViewport() {
     const rawGrid = turf.hexGrid(bbox, 0.45, { units: 'kilometers' });
 
     const clippedFeatures: Feature<Polygon | MultiPolygon>[] = [];
-    
+
     for (const hex of rawGrid.features) {
       const clipped = turf.intersect(turf.featureCollection([hex, districtPolygon]));
       if (!clipped) continue;
-      
+
       const center = turf.centerOfMass(hex);
-      
+
       clipped.properties = {
         centerLng: center.geometry.coordinates[0],
         centerLat: center.geometry.coordinates[1]
       };
-      
+
       clippedFeatures.push(clipped as Feature<Polygon | MultiPolygon>);
     }
-    
+
     return clippedFeatures;
   }, []);
 
@@ -70,56 +70,53 @@ export function MapViewport() {
   const drawPublicZones = useCallback(() => {
     const map = mapRef.current;
     if (!map) return;
+
     clearPublicOverlays();
 
-    liveIncidents.forEach((incident, idx) => {
-      const lat = incident.lat ?? incident.lat;
-      const lng = incident.lng ?? incident.lng;
-      if (lat == null || lng == null) return;
+    if (liveIncidents.length === 0) return;
+    const validPoints = liveIncidents
+      .filter((i: any) => (i.lat ?? i.latitude) != null && (i.lng ?? i.longitude) != null)
+      .map((i: any) => turf.point([i.lng ?? i.longitude, i.lat ?? i.latitude]));
 
-      const r      = ZONE_DEG;
-      const bounds = L.latLngBounds([lat - r, lng - r], [lat + r, lng + r]);
-      const rgb    = intensityToRgb(incident.intensity);
-      const gradId = `pg-${idx}-${Date.now()}`;
-      const svgNS  = 'http://www.w3.org/2000/svg';
+    if (validPoints.length === 0) return;
+    const pointsCollection = turf.featureCollection(validPoints);
 
-      const svg  = document.createElementNS(svgNS, 'svg');
-      svg.setAttribute('xmlns', svgNS);
-      svg.setAttribute('viewBox', '0 0 100 100');
+    try {
+      const outerBuffer = turf.buffer(pointsCollection, 2.0, { units: 'kilometers' });
+      const innerBuffer = turf.buffer(pointsCollection, 0.6, { units: 'kilometers' });
 
-      const defs = document.createElementNS(svgNS, 'defs');
-      const grad = document.createElementNS(svgNS, 'radialGradient');
-      grad.setAttribute('id', gradId);
-      grad.setAttribute('cx', '50%'); grad.setAttribute('cy', '50%'); grad.setAttribute('r', '50%');
+      if (!outerBuffer || !innerBuffer) return;
 
-      const stops: [string, number][] = [
-        ['0%',   0.75 * incident.intensity],
-        ['30%',  0.5  * incident.intensity],
-        ['60%',  0.25 * incident.intensity],
-        ['100%', 0],
-      ];
-      stops.forEach(([offset, opacity]) => {
-        const stop = document.createElementNS(svgNS, 'stop');
-        stop.setAttribute('offset', offset);
-        stop.setAttribute('stop-color', `rgb(${rgb})`);
-        stop.setAttribute('stop-opacity', String(Math.min(opacity, 1)));
-        grad.appendChild(stop);
-      });
-      defs.appendChild(grad);
-      svg.appendChild(defs);
+      const mergedOuter = turf.dissolve(outerBuffer as any);
+      const mergedInner = turf.dissolve(innerBuffer as any);
 
-      const circle = document.createElementNS(svgNS, 'circle');
-      circle.setAttribute('cx', '50'); circle.setAttribute('cy', '50'); circle.setAttribute('r', '50');
-      circle.setAttribute('fill', `url(#${gradId})`);
-      svg.appendChild(circle);
+      const outerLayer = L.geoJSON(mergedOuter as any, {
+        style: {
+          color: 'transparent',
+          fillColor: '#ef4444',
+          fillOpacity: 0.15,
+          className: 'blur-[16px] pointer-events-none transition-all duration-700'
+        }
+      }).addTo(map);
 
-      const overlay = L.svgOverlay(svg, bounds, { interactive: false, opacity: 1 });
-      overlay.addTo(map);
-      publicOverlaysRef.current.push(overlay);
-    });
+      const innerLayer = L.geoJSON(mergedInner as any, {
+        style: {
+          color: '#ef4444',
+          weight: 1,
+          opacity: 0.3,
+          fillColor: '#ef4444',
+          fillOpacity: 0.35,
+          className: 'blur-[4px] pointer-events-none transition-all duration-700'
+        }
+      }).addTo(map);
+
+      publicOverlaysRef.current.push(outerLayer as any, innerLayer as any);
+
+    } catch (error) {
+      console.error('Помилка генерації об\'єднаних зон радара:', error);
+    }
   }, [liveIncidents, clearPublicOverlays]);
 
-  // ── Ініціалізація карти
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
     const map = L.map(mapContainerRef.current, {
@@ -143,13 +140,11 @@ export function MapViewport() {
     };
   }, [clearPublicOverlays]);
 
-  // ── Публічні зони
   useEffect(() => {
     if (isAdmin || activeLayer !== 'heatmap') { clearPublicOverlays(); return; }
     drawPublicZones();
   }, [liveIncidents, isAdmin, drawPublicZones, clearPublicOverlays, activeLayer]);
 
-  // ── Маркери (адмін)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -266,11 +261,11 @@ export function MapViewport() {
       <ZoomControls mapRef={mapRef} />
       <MapLegend activeLayer={activeLayer} />
       <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
-  <button onClick={() => mapRef.current?.zoomIn()}  className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn  size={18} /></button>
-  <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
-  
-  <LocationControl mapRef={mapRef} />
-</div>
+        <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn size={18} /></button>
+        <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
+
+        <LocationControl mapRef={mapRef} />
+      </div>
     </div>
   );
 }
