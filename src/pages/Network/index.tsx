@@ -4,6 +4,10 @@ import { getStompClient } from '../../services/stompClient';
 import { fetchWithAuth, WS_TOPICS } from '../../config/api';
 import { Wifi, XCircle, Cpu, Database } from 'lucide-react';
 
+/**
+ * Модель вузла сенсорної мережі.
+ * Відображає апаратний стан та якість зв'язку акустичного датчика.
+ */
 interface SensorNode {
   id: string;
   location: string;
@@ -13,7 +17,11 @@ interface SensorNode {
   lastHeartbeat: string;
 }
 
-// ─── Тестові дані на випадок, якщо бекенд порожній або видає помилку ───
+/**
+ * Резервні тестові дані (fallback).
+ * Забезпечують працездатність інтерфейсу та демонстрацію функціоналу 
+ * у разі тимчасової недоступності бекенду або відсутності реальних даних.
+ */
 const MOCK_SENSORS: SensorNode[] = [
   { id: 'AG-NODE-001', location: 'Shevchenkivskyi', status: 'online', latency: 12, uptime: '99.9%', lastHeartbeat: new Date().toISOString() },
   { id: 'AG-NODE-002', location: 'Obolon', status: 'warning', latency: 145, uptime: '98.5%', lastHeartbeat: new Date(Date.now() - 50000).toISOString() },
@@ -21,6 +29,13 @@ const MOCK_SENSORS: SensorNode[] = [
   { id: 'AG-NODE-004', location: 'Pechersk', status: 'online', latency: 8, uptime: '99.9%', lastHeartbeat: new Date().toISOString() },
 ];
 
+/**
+ * Сторінка моніторингу стану апаратної мережі (Network Dashboard).
+ * Відповідає за:
+ * 1. Завантаження початкового стану вузлів через REST API.
+ * 2. Підтримку актуальності даних у реальному часі через WebSocket (STOMP).
+ * 3. Відображення загальних KPI та детальної таблиці сенсорів.
+ */
 export default function NetworkPage() {
   const [sensors, setSensors] = useState<SensorNode[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,8 +48,7 @@ export default function NetworkPage() {
       })
       .then((data) => {
         console.log('Дані від беку:', data);
-        // Перевіряємо структуру даних: іноді бекенд загортає масив у { content: [] }
-        const sensorArray = Array.isArray(data) ? data : (data?.content || data?.sensors || []);
+       const sensorArray = Array.isArray(data) ? data : (data?.content || data?.sensors || []);
         
         if (sensorArray.length === 0) {
           console.warn('Бекенд повернув порожній масив. Використовуємо тестові дані.');
@@ -68,7 +82,11 @@ export default function NetworkPage() {
   const onlineNodes = sensors.filter(n => n.status === 'online').length;
   const offlineNodes = sensors.filter(n => n.status === 'offline').length;
 
-  // Форматуємо дату для красивого відображення в таблиці
+  /**
+   * Локалізує рядок формату ISO 8601 у зрозумілий для користувача формат часу.
+   * @param isoString - Час останнього відгуку сенсора (ISO 8601).
+   * @returns Відформатований рядок (наприклад, "14:30:00") або оригінальний рядок у разі помилки.
+   */
   const formatTime = (isoString: string) => {
     try {
       return new Date(isoString).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -134,6 +152,10 @@ export default function NetworkPage() {
   );
 }
 
+/**
+ * Візуальний індикатор поточного статусу сенсора з відповідним кольоровим кодуванням.
+ * @param props.status - Стан вузла (online, warning, offline).
+ */
 function StatusBadge({ status }: { status: string }) {
   const styles = {
     online: 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20',
@@ -147,6 +169,13 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/**
+ * Компонент картки для відображення ключових показників ефективності (KPI) мережі.
+ * @param props.title - Назва показника (наприклад, "Connected Nodes").
+ * @param props.value - Кількісне або текстове значення метрики.
+ * @param props.icon - Іконка з бібліотеки Lucide.
+ * @param props.color - CSS-клас для стилізації кольору тексту та іконки.
+ */
 function StatCard({ title, value, icon: Icon, color }: any) {
   return (
     <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-4">

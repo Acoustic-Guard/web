@@ -3,6 +3,12 @@ import { MapViewport } from '../../components/MapViewport';
 import { AlertFeed } from '../../components/AlertFeed';
 import { useAuth } from '../../hooks/useAuth';
 
+/**
+ * Головний компонент робочої панелі (Dashboard) для моніторингу акустичної обстановки.
+ * Інтегрує віджети телеметрії мережі, мапу просторового відображення інцидентів
+ * та стрічку оперативних сповіщень. Використовує рольову модель доступу (RBAC) 
+ * для контролю видимості адміністративних модулів.
+ */
 export default function Dashboard() {
   const { isAdmin } = useAuth();
   

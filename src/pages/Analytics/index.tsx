@@ -9,6 +9,11 @@ import { THREAT_COLORS, THREAT_BADGES, STATUS_COLORS, formatDate } from '../../c
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, ChartTooltip, ChartLegend, ArcElement);
 
+/**
+ * Головний компонент сторінки аналітики (Dashboard).
+ * Відповідає за агрегацію та візуалізацію даних про загрози.
+ * Включає фільтрацію за часом, графіки (Chart.js) та експорт звітів.
+ */
 export default function AnalyticsPage() {
   const {
     data, loading, timeRange, showDatePicker, setShowDatePicker,
@@ -17,6 +22,11 @@ export default function AnalyticsPage() {
     distributionData, mostFrequent
   } = useAnalytics();
 
+  /**
+   * Обробник експорту поточних відфільтрованих даних у PDF-формат.
+   * Використовує вбудовані можливості браузера для друку спеціально
+   * підготовленого компонента PrintableReport.
+   */
   const handleExportReport = () => {
     if (!data?.history || data.history.length === 0) {
       alert("Немає даних для експорту");
@@ -27,6 +37,10 @@ export default function AnalyticsPage() {
 
   const actualTimeSeries = data?.timeSeries || [];
 
+  /**
+   * Конфігурація даних (datasets) для лінійного графіка.
+   * Відображає частоту фіксації різних типів загроз (UAV, Explosion тощо) у часі.
+   */
   const lineChartData = {
     labels: actualTimeSeries.map((p: any) => new Date(p.timestamp || p.createdAt || new Date().toISOString()).toLocaleTimeString('uk-UA', { hour: '2-digit', minute: '2-digit' })),
     datasets: [
@@ -37,12 +51,19 @@ export default function AnalyticsPage() {
     ]
   };
 
+  /**
+   * Опції відображення лінійного графіка: адаптивність, осі, стилізація tooltip.
+   */
   const lineChartOptions = {
     responsive: true, maintainAspectRatio: false, interaction: { mode: 'index' as const, intersect: false }, animation: { duration: 0 },
     plugins: { legend: { labels: { color: '#e4e4e7', font: { size: 12 }, boxWidth: 12 } }, tooltip: { backgroundColor: '#0a0a0f', borderColor: '#1a1a24', borderWidth: 1, padding: 10 } },
     scales: { x: { ticks: { color: '#71717a', font: { size: 10 } }, grid: { display: false } }, y: { ticks: { color: '#71717a', font: { size: 11 }, stepSize: 1 }, grid: { color: '#1a1a24' }, min: 0 } }
   };
 
+  /**
+   * Конфігурація даних для кругової діаграми (Doughnut).
+   * Демонструє відсоткове співвідношення та розподіл усіх зафіксованих інцидентів.
+   */
   const pieChartData = {
     labels: distributionData.map(d => d.name),
     datasets: [{ data: distributionData.map(d => d.value), backgroundColor: distributionData.map(d => d.color), borderWidth: 0, hoverOffset: 4 }]
