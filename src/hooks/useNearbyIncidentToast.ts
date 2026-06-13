@@ -1,8 +1,10 @@
+/* eslint-disable react-hooks/purity */
 import { useEffect, useRef, useState } from 'react';
 import type { IncidentMarker } from '../types/incidents';
 
 const RADIUS_KM = 4;
 const TOAST_DURATION_MS = 6000;
+
 
 /**
  * Обчислює дистанцію між користувачем та зафіксованим інцидентом 
@@ -40,6 +42,7 @@ export function useNearbyIncidentToast(userLocation: { lat: number; lng: number 
   const [toast, setToast] = useState<ToastIncident | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const userLocationRef = useRef(userLocation);
+  const shownIdsRef = useRef<Set<string>>(new Set());
 
   useEffect(() => { userLocationRef.current = userLocation; }, [userLocation]);
 
@@ -49,6 +52,8 @@ export function useNearbyIncidentToast(userLocation: { lat: number; lng: number 
   };
 
   const notify = (incident: IncidentMarker) => {
+        if (shownIdsRef.current.has(incident.id)) return;
+
     const loc = userLocationRef.current;
     if (!loc) return;
 
