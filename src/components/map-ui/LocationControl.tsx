@@ -14,6 +14,15 @@ export function LocationControl({ mapRef, onLocationChange, onPermissionDenied }
   const userMarkerRef = useRef<L.Marker | null>(null);
   const watchIdRef = useRef<number | null>(null);
 
+  useEffect(() => {
+    return () => {
+      if (userMarkerRef.current && mapRef.current) {
+        mapRef.current.removeLayer(userMarkerRef.current);
+        userMarkerRef.current = null;
+      }
+    };
+  }, [mapRef]);
+
   // Перевіряємо поточний стан дозволу при монтуванні
   useEffect(() => {
     if (!navigator.permissions) return;
