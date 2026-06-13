@@ -16,6 +16,7 @@ import { MARKER_COLORS } from '../constants/ThreatColors';
 import { dbToColor, dbToOpacity, idwInterpolate } from '../constants/mapUtils';
 
 import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
+import { IncidentStatsWidget } from './IncidentStatsWidget';
 import { LayerControls } from './map-ui/LayerControls';
 import { ZoomControls } from './map-ui/ZoomControls';
 import { MapLegend } from './map-ui/MapLegend';
@@ -23,7 +24,7 @@ import { LocationControl } from './map-ui/LocationControl';
 import { NoiseStatusPanel } from './map-ui/NoiseStatusPanel';
 import { IncidentToast } from './map-ui/IncidentToast';
 import { useNearbyIncidentToast } from '../hooks/useNearbyIncidentToast';
-import { ZoomIn, ZoomOut } from 'lucide-react';
+import { ZoomIn, ZoomOut, BarChart2 } from 'lucide-react';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -36,13 +37,13 @@ export function MapViewport() {
   const publicOverlaysRef = useRef<L.SVGOverlay[]>([]);
 
   const [activeLayer, setActiveLayer] = useState<'heatmap' | 'noisemap' | 'none'>('heatmap');
+  const [statsOpen, setStatsOpen] = useState(false);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
   const [locationPermission, setLocationPermission] = useState<'unknown' | 'granted' | 'denied'>('unknown');
 
   const { liveIncidents, selectedIncident, setSelectedIncident, handleResolve, isResolving } = useLiveIncidents();
   const { toast, notify, dismiss } = useNearbyIncidentToast(userLocation);
 
-  // Слухаємо нові інциденти для сповіщень (окремо від useLiveIncidents)
   useIncidentStream({ onIncident: notify });
   const { points: apiNoisePoints } = useNoiseMap();
   const noisePoints = apiNoisePoints || [];
@@ -266,6 +267,28 @@ export function MapViewport() {
           handleResolve={handleResolve}
           isResolving={isResolving}
         />
+      )}
+
+      {/* Drawer статистики — тільки адмін */}
+      {isAdmin && (
+        <>
+          <IncidentStatsWidget
+            incidents={liveIncidents}
+            isOpen={statsOpen}
+            onClose={() => setStatsOpen(false)}
+          />
+          {/* Закладка-кнопка */}
+          <button
+            onClick={() => setStatsOpen(!statsOpen)}
+            style={{
+              right: statsOpen ? '288px' : '0px',
+              transition: 'right 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+            }}
+            className="absolute top-1/2 -translate-y-1/2 z-[560] flex items-center gap-1.5 bg-[#1a1a24] hover:bg-[#2a2a34] border border-[#2a2a35] border-r-0 text-[#71717a] hover:text-white px-2 py-3 rounded-l-lg shadow-lg transition-colors"
+          >
+            <BarChart2 size={14} />
+          </button>
+        </>
       )}
 
       <LayerControls activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
