@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { X, AlertTriangle, Radio, Zap, Wind } from 'lucide-react';
+import { X, AlertTriangle, Radio, Zap, Wind, Truck } from 'lucide-react';
 import type { ToastIncident } from '../../hooks/useNearbyIncidentToast';
 
 interface Props {
@@ -12,6 +12,7 @@ const TYPE_CONFIG = {
   Explosion: { icon: Zap,           label: 'Вибух зафіксовано',  color: 'text-red-400',    border: 'border-red-500/40',    bg: 'bg-red-500/10',    dot: 'bg-red-400',    bar: '#ef4444' },
   Siren:     { icon: AlertTriangle, label: 'Сирена активована',  color: 'text-amber-400',  border: 'border-amber-500/40',  bg: 'bg-amber-500/10',  dot: 'bg-amber-400',  bar: '#f59e0b' },
   Generator: { icon: Radio,         label: 'Генератор виявлено', color: 'text-yellow-400', border: 'border-yellow-500/40', bg: 'bg-yellow-500/5',  dot: 'bg-yellow-400', bar: '#eab308' },
+  Truck:     { icon: Truck,         label: 'Вантажівка виявлено', color: 'text-blue-400',   border: 'border-blue-500/40',  bg: 'bg-blue-500/10',  dot: 'bg-blue-400',  bar: '#3b82f6' },
 } as const;
 
 const DURATION_MS = 6000;

@@ -48,6 +48,7 @@ export default function AnalyticsPage() {
       { label: 'Explosion', data: actualTimeSeries.map((p: any) => p.Explosion || 0), borderColor: THREAT_COLORS.Explosion, tension: 0.4, pointRadius: 0, borderWidth: 2 },
       { label: 'Siren', data: actualTimeSeries.map((p: any) => p.Siren || 0), borderColor: THREAT_COLORS.Siren, tension: 0.4, pointRadius: 0, borderWidth: 2 },
       { label: 'Generator', data: actualTimeSeries.map((p: any) => p.Generator || 0), borderColor: THREAT_COLORS.Generator, tension: 0.4, pointRadius: 0, borderWidth: 2 },
+      { label: 'Truck', data: actualTimeSeries.map((p: any) => p.Truck || 0), borderColor: THREAT_COLORS.Truck, tension: 0.4, pointRadius: 0, borderWidth: 2 },
     ]
   };
 

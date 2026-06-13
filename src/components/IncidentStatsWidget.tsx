@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Wind, Zap, AlertTriangle, Radio, Clock, ChevronRight } from 'lucide-react';
+import { Wind, Zap, AlertTriangle, Radio, Clock, ChevronRight, Truck } from 'lucide-react';
 import type { IncidentMarker } from '../types/incidents';
 
 interface Props {
@@ -13,11 +13,12 @@ const TYPE_CONFIG = {
   Explosion: { icon: Zap,           label: 'Вибухи',  color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
   Siren:     { icon: AlertTriangle, label: 'Сирени',  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
   Generator: { icon: Radio,         label: 'Генер.',  color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+  Truck:     { icon: Truck,         label: 'Вантаж.', color: 'text-blue-400',   bg: 'bg-blue-500/10',  border: 'border-blue-500/20'   },
 } as const;
 
 export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
   const stats = useMemo(() => {
-    const counts = { UAV: 0, Explosion: 0, Siren: 0, Generator: 0 };
+    const counts = { UAV: 0, Explosion: 0, Siren: 0, Generator: 0, Truck: 0 };
     for (const inc of incidents) {
       if (inc.type in counts) counts[inc.type]++;
     }
@@ -88,7 +89,8 @@ export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
                       type === 'UAV' || type === 'Explosion' ? 'bg-red-500' :
-                      type === 'Siren' ? 'bg-amber-500' : 'bg-yellow-500'
+                      type === 'Siren' ? 'bg-amber-500' :
+                      type === 'Truck' ? 'bg-blue-500' : 'bg-yellow-500'
                     }`}
                     style={{ width: `${pct}%` }}
                   />
