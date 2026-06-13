@@ -18,13 +18,12 @@ import { dbToColor, dbToOpacity, idwInterpolate } from '../constants/mapUtils';
 import { IncidentDetailPanel } from './map-ui/IncidentDetailPanel';
 import { IncidentStatsWidget } from './IncidentStatsWidget';
 import { LayerControls } from './map-ui/LayerControls';
-import { ZoomControls } from './map-ui/ZoomControls';
 import { MapLegend } from './map-ui/MapLegend';
 import { LocationControl } from './map-ui/LocationControl';
 import { NoiseStatusPanel } from './map-ui/NoiseStatusPanel';
 import { IncidentToast } from './map-ui/IncidentToast';
 import { useNearbyIncidentToast } from '../hooks/useNearbyIncidentToast';
-import { ZoomIn, ZoomOut, BarChart2 } from 'lucide-react';
+import { ZoomIn, ZoomOut, BarChart2, Moon, Sun } from 'lucide-react';
 
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -48,6 +47,7 @@ export function MapViewport() {
   const { points: apiNoisePoints } = useNoiseMap();
   const noisePoints = apiNoisePoints || [];
 
+  const [isDarkMap, setIsDarkMap] = useState(true);
 
   const baseClippedGrid = useMemo(() => {
     const districtPolygon = turf.polygon(districtGeoJson.features[0].geometry.coordinates);
@@ -128,15 +128,23 @@ export function MapViewport() {
       console.error('Помилка генерації об\'єднаних зон радара:', error);
     }
   }, [liveIncidents, clearPublicOverlays]);
+  
+const tileRef = useRef<L.TileLayer | null>(null);
 
   useEffect(() => {
     if (!mapContainerRef.current || mapRef.current) return;
+    
     const map = L.map(mapContainerRef.current, {
       center: MAP_CONFIG.center,
       zoom: MAP_CONFIG.defaultZoom,
       zoomControl: false,
     });
-    L.tileLayer(MAP_CONFIG.tileUrl, { attribution: MAP_CONFIG.tileAttribution, maxZoom: MAP_CONFIG.maxZoom }).addTo(map);
+    
+    tileRef.current = L.tileLayer(isDarkMap ? MAP_CONFIG.tileUrl : MAP_CONFIG.tileUrlLight, {
+      attribution: MAP_CONFIG.tileAttribution,
+      maxZoom: MAP_CONFIG.maxZoom,
+    }).addTo(map);
+
     mapRef.current = map;
 
     return () => {
@@ -150,7 +158,13 @@ export function MapViewport() {
       markersGroupRef.current = null;
       noiseLayerRef.current = null;
     };
-  }, [clearPublicOverlays]);
+  }, [clearPublicOverlays, isDarkMap]);
+
+  useEffect(() => {
+  const map = mapRef.current;
+  if (!map || !tileRef.current) return;
+  tileRef.current.setUrl(isDarkMap ? MAP_CONFIG.tileUrl : MAP_CONFIG.tileUrlLight);
+}, [isDarkMap]);
 
   useEffect(() => {
     if (isAdmin || activeLayer !== 'heatmap') { clearPublicOverlays(); return; }
@@ -277,7 +291,6 @@ export function MapViewport() {
             isOpen={statsOpen}
             onClose={() => setStatsOpen(false)}
           />
-          {/* Закладка-кнопка */}
           <button
             onClick={() => setStatsOpen(!statsOpen)}
             style={{
@@ -292,11 +305,20 @@ export function MapViewport() {
       )}
 
       <LayerControls activeLayer={activeLayer} setActiveLayer={setActiveLayer} />
-      <ZoomControls mapRef={mapRef} />
       <MapLegend activeLayer={activeLayer} />
+
       <div className="absolute top-4 right-4 z-[500] flex flex-col gap-2">
         <button onClick={() => mapRef.current?.zoomIn()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomIn size={18} /></button>
         <button onClick={() => mapRef.current?.zoomOut()} className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors"><ZoomOut size={18} /></button>
+
+        {/* Кнопка теми тепер у правильному блоці з іншими елементами керування */}
+        <button
+          onClick={() => setIsDarkMap(!isDarkMap)}
+          className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors border border-[#2a2a35]"
+          title={isDarkMap ? 'Світла карта' : 'Темна карта'}
+        >
+          {isDarkMap ? <Sun size={18} /> : <Moon size={18} />}
+        </button>
 
         {!isAdmin && <LocationControl
           mapRef={mapRef}
