@@ -9,6 +9,10 @@ interface Props {
   isResolving: boolean;
 }
 
+/**
+ * Панель деталей інциденту (тільки для адміністратора).
+ * Відображає точні координати, рівень довіри та надає можливість позначити інцидент як "Вирішений".
+ */
 export function IncidentDetailPanel({ selectedIncident, setSelectedIncident, handleResolve, isResolving }: Props) {
   if (!selectedIncident) return null;
 

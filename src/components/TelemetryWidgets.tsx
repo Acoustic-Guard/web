@@ -18,6 +18,10 @@ const STATUS_VALUE: Record<Status, string> = {
   critical: 'text-red-400',
 };
 
+/**
+ * Картка окремої системної метрики (наприклад, Заряд батареї або Сигнал).
+ * Змінює колір індикатора залежно від статусу (normal, warning, critical).
+ */
 function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
   const displayValue = value ?? 0;
   return (
@@ -37,6 +41,10 @@ function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardP
   );
 }
 
+/**
+ * Віджет системної телеметрії (Верхня панель дашборду).
+ * Отримує дані стану обладнання та відображає їх у вигляді сітки карток (MetricCard).
+ */
 export function TelemetryWidgets() {
   const { metrics, loading, error } = useTelemetry();
 

@@ -6,7 +6,10 @@ interface Props {
   toast: ToastIncident | null;
   onDismiss: () => void;
 }
-
+/**
+ * Словник налаштувань для спливаючих повідомлень (Toast).
+ * Кольори синхронізовано з ThreatColors.ts (БПЛА = фіолетовий, Генератори = синій).
+ */
 const TYPE_CONFIG = {
   UAV:       { icon: Wind,          label: 'БПЛА виявлено',      color: 'text-red-400',    border: 'border-red-500/40',    bg: 'bg-red-500/10',    dot: 'bg-red-400',    bar: '#ef4444' },
   Explosion: { icon: Zap,           label: 'Вибух зафіксовано',  color: 'text-red-400',    border: 'border-red-500/40',    bg: 'bg-red-500/10',    dot: 'bg-red-400',    bar: '#ef4444' },
@@ -17,6 +20,10 @@ const TYPE_CONFIG = {
 
 const DURATION_MS = 6000;
 
+/**
+ * Спливаюче попередження про небезпеку поблизу користувача.
+ * З'являється знизу екрана і має анімовану смужку прогресу (Таймбар).
+ */
 export function IncidentToast({ toast, onDismiss }: Props) {
   const barRef       = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);

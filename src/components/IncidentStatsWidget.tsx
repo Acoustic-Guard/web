@@ -8,6 +8,9 @@ interface Props {
   onClose: () => void;
 }
 
+/**
+ * Словник візуальних налаштувань (іконка, колір, переклад) для кожного типу інциденту.
+ */
 const TYPE_CONFIG = {
   UAV:       { icon: Wind,          label: 'БПЛА',    color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
   Explosion: { icon: Zap,           label: 'Вибухи',  color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
@@ -16,6 +19,10 @@ const TYPE_CONFIG = {
   Truck:     { icon: Truck,         label: 'Вантаж.', color: 'text-blue-400',   bg: 'bg-blue-500/10',  border: 'border-blue-500/20'   },
 } as const;
 
+/**
+ * Віджет аналітики інцидентів (Drawer).
+ * Виїжджає з правого краю екрана та показує розбивку живих подій за типами.
+ */
 export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
   const stats = useMemo(() => {
     const counts = { UAV: 0, Explosion: 0, Siren: 0, Generator: 0, Truck: 0 };

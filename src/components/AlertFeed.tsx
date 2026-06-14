@@ -2,6 +2,10 @@ import { useAlerts } from '../hooks/useAlerts';
 import { THREAT_BADGE_COLORS, getConfidenceColor } from '../constants/ThreatColors';
 import type { AlertCardProps } from '../types/incidents';
 
+/**
+ * Компонент карточки окремого сповіщення (Alert).
+ * Відображає тип загрози, рівень впевненості алгоритму, локацію та час.
+ */
 function AlertCard({ alert }: AlertCardProps) {
   return (
     <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-3 hover:border-[#2a2a34] transition-colors">
@@ -19,6 +23,10 @@ function AlertCard({ alert }: AlertCardProps) {
   );
 }
 
+/**
+ * Бічна панель "Alert Feed".
+ * Підписується на потік сповіщень у реальному часі та виводить їх списком.
+ */
 export function AlertFeed() {
   const { alerts, loading, error } = useAlerts();
 

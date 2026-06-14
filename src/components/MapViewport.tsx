@@ -24,6 +24,11 @@ import { NoiseStatusPanel } from './map-ui/NoiseStatusPanel';
 import { IncidentToast } from './map-ui/IncidentToast';
 import { ZoomIn, ZoomOut, BarChart2, Moon, Sun } from 'lucide-react';
 
+/**
+ * Головний контейнер (Viewport) інтерактивної карти Leaflet.
+ * Відповідає за агрегацію хуків логіки шарів (Public, Admin, Noise) 
+ * та вивід поверх них інтерфейсу (елементи керування, легенда, нотифікації).
+ */
 export function MapViewport() {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   
