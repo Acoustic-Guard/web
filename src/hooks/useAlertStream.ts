@@ -28,7 +28,7 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
   useEffect(() => {
     if (IS_MOCK) {
       // Заглушка: емулює новий алерт кожні 8 секунд
-      const MOCK_TYPES = ['UAV', 'Explosion', 'Siren', 'Generator'] as const;
+      const MOCK_TYPES = ['UAV', 'Explosion', 'Siren', 'Generator', 'Truck'] as const;
       const interval = setInterval(() => {
         const mockRaw: ApiAlert = {
           id:         crypto.randomUUID(),

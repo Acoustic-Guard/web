@@ -10,10 +10,11 @@ export function MapLegend({ activeLayer }: Props) {
       {activeLayer !== 'noisemap' && (
         <div className="space-y-1.5">
           {[
-            { color: 'bg-red-500',    label: 'UAV Detected' },
-            { color: 'bg-red-600',    label: 'Explosion'    },
-            { color: 'bg-amber-500',  label: 'Siren'        },
-            { color: 'bg-yellow-500', label: 'Generator'    },
+            { color: 'bg-red-500',    label: 'БПЛА'        },
+            { color: 'bg-red-600',    label: 'Вибухи'       },
+            { color: 'bg-amber-500',  label: 'Сирени'       },
+            { color: 'bg-yellow-500', label: 'Генератори'   },
+            { color: 'bg-blue-500',   label: 'Вантажівки'   },
           ].map(({ color, label }) => (
             <div key={label} className="flex items-center gap-2">
               <div className={`w-2 h-2 ${color} rounded-full`} />

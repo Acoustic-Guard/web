@@ -25,7 +25,7 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
 
   useEffect(() => {
     if (IS_MOCK) {
-      const MOCK_TYPES = ['UAV', 'Explosion', 'Siren', 'Generator'] as const;
+      const MOCK_TYPES = ['UAV', 'Explosion', 'Siren', 'Generator', 'Truck'] as const;
       const interval = setInterval(() => {
         const mockRaw: ApiIncident = {
           id: crypto.randomUUID(),

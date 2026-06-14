@@ -6,6 +6,7 @@ export const THREAT_COLORS: Record<string, string> = {
   Explosion: '#dc2626',
   Siren: '#f59e0b',
   Generator: '#eab308',
+  Truck: '#3b82f6',
 };
 
 /**
@@ -16,6 +17,7 @@ export const THREAT_BADGES: Record<string, string> = {
   Explosion: 'bg-red-600/10 text-red-500 border-red-600/20',
   Siren: 'bg-amber-500/10 text-amber-400 border-amber-500/20',
   Generator: 'bg-yellow-500/10 text-yellow-400 border-yellow-500/20',
+  Truck: 'bg-blue-500/10 text-blue-400 border-blue-500/20',
 };
 
 /**

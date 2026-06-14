@@ -5,7 +5,7 @@ export interface IncidentMarker {
   id: string;
   lat: number;
   lng: number;
-  type: 'UAV' | 'Explosion' | 'Siren' | 'Generator';
+  type: 'UAV' | 'Explosion' | 'Siren' | 'Generator' | 'Truck';
   intensity: number;
   status?: string;
 }
@@ -16,7 +16,7 @@ export interface IncidentMarker {
 export interface HistoricalIncident {
   id: string;
   datetime: string;
-  type: 'UAV' | 'Siren' | 'Explosion' | 'Generator';
+  type: 'UAV' | 'Siren' | 'Explosion' | 'Generator' | 'Truck';
   coordinates: string;
   confidence: number;
   status: 'Resolved' | 'Investigating' | 'Confirmed';
@@ -27,7 +27,7 @@ export interface HistoricalIncident {
  */
 export interface Alert {
   id: string;
-  type: 'UAV' | 'Siren' | 'Explosion' | 'Generator';
+  type: 'UAV' | 'Siren' | 'Explosion' | 'Generator' | 'Truck';
   timestamp: string;
   confidence: number;
   location: string;
