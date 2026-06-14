@@ -33,9 +33,9 @@ export function IncidentDetailPanel({ selectedIncident, setSelectedIncident, han
 
       <div className="space-y-2 mb-5">
         {[
-          { label: 'Рівень довіри:', value: `${Math.round(selectedIncident.intensity * 100)}%`, cls: 'text-emerald-400 font-semibold' },
-          { label: 'Широта:',       value: (selectedIncident.lat ?? selectedIncident.latitude)?.toFixed(6),  cls: 'text-white font-mono' },
-          { label: 'Довгота:',      value: (selectedIncident.lng ?? selectedIncident.longitude)?.toFixed(6), cls: 'text-white font-mono' },
+          { label: 'Confidence:', value: `${Math.round(selectedIncident.intensity * 100)}%`, cls: 'text-emerald-400 font-semibold' },
+          { label: 'Latitude:',       value: (selectedIncident.lat ?? selectedIncident.latitude)?.toFixed(6),  cls: 'text-white font-mono' },
+          { label: 'Longitude:',      value: (selectedIncident.lng ?? selectedIncident.longitude)?.toFixed(6), cls: 'text-white font-mono' },
         ].map(({ label, value, cls }) => (
           <div key={label} className="flex justify-between items-center bg-[#1a1a24]/50 rounded px-2 py-1.5 text-xs">
             <span className="text-[#71717a]">{label}</span>
@@ -50,7 +50,7 @@ export function IncidentDetailPanel({ selectedIncident, setSelectedIncident, han
         className="w-full bg-emerald-600/10 hover:bg-emerald-600/20 border border-emerald-500/50 disabled:opacity-50 text-emerald-400 text-xs font-semibold py-2 rounded-lg transition-colors flex justify-center items-center gap-2"
       >
         <CheckCircle size={14} />
-        {isResolving ? 'Закриття...' : 'Позначити як Вирішено'}
+        {isResolving ? 'Resolving...' : 'Mark as Resolved'}
       </button>
     </div>
   );

@@ -22,7 +22,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       await login(username, password);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Помилка входу');
+      setError(err instanceof Error ? err.message : 'Login error');
     } finally {
       setLoading(false);
     }
@@ -43,7 +43,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
               <LockKeyhole size={16} className="text-[#2563eb]" />
             </div>
             <div>
-              <h2 className="text-sm font-semibold text-white">Вхід для оператора</h2>
+              <h2 className="text-sm font-semibold text-white">Operator login</h2>
               <p className="text-xs text-[#71717a]">Acoustic Guard Admin</p>
             </div>
           </div>
@@ -54,7 +54,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-xs text-[#71717a] mb-1.5">Логін</label>
+            <label className="block text-xs text-[#71717a] mb-1.5">Login</label>
             <input
               type="text"
               value={username}
@@ -65,7 +65,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
             />
           </div>
           <div>
-            <label className="block text-xs text-[#71717a] mb-1.5">Пароль</label>
+            <label className="block text-xs text-[#71717a] mb-1.5">Password</label>
             <input
               type="password"
               value={password}
@@ -88,7 +88,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
             className="w-full bg-[#2563eb] hover:bg-[#1d4ed8] disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-semibold rounded-lg px-4 py-2.5 flex items-center justify-center gap-2 transition-colors"
           >
             <LogIn size={16} />
-            {loading ? 'Вхід...' : 'Увійти'}
+            {loading ? 'Logging in...' : 'Log in'}
           </button>
         </form>
       </div>

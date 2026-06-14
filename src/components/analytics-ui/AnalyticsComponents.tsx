@@ -25,48 +25,48 @@ export function PrintableReport({ data, timeRange, mostFrequent }: any) {
       <div className="flex justify-between items-start border-b-2 border-slate-900 pb-4 mb-6">
         <div>
           <h1 className="text-2xl font-bold uppercase tracking-wide text-slate-900">Acoustic Guard</h1>
-          <p className="text-xs text-slate-500 font-mono mt-1">Система розподіленого міського акустичного моніторингу</p>
+          <p className="text-xs text-slate-500 font-mono mt-1">Distributed urban acoustic monitoring system</p>
         </div>
         <div className="text-right text-xs font-mono text-slate-500">
-          <div>ДАТА: {new Date().toLocaleDateString('uk-UA')}</div>
-          <div>ПЕРІОД ЗВІТУ: {timeRange.toUpperCase()}</div>
-          <div>СТАТУС: ОФІЦІЙНИЙ ЗВІТ</div>
+          <div>DATE: {new Date().toLocaleDateString('uk-UA')}</div>
+          <div>REPORT PERIOD: {timeRange.toUpperCase()}</div>
+          <div>STATUS: OFFICIAL REPORT</div>
         </div>
       </div>
 
       <h2 className="text-xl font-bold text-center mb-6 text-slate-800 uppercase tracking-tight">
-        Аналітичний звіт фіксації акустичних загроз
+        Acoustic Threat Detection Report
       </h2>
 
       <div className="grid grid-cols-4 gap-4 mb-8">
         <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
-          <div className="text-xs text-slate-500 mb-1">Усього інцидентів</div>
+          <div className="text-xs text-slate-500 mb-1">Total incidents</div>
           <div className="text-lg font-bold text-slate-900">{data?.totalIncidents || 0}</div>
         </div>
         <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
-          <div className="text-xs text-slate-500 mb-1">Часта загроза</div>
+          <div className="text-xs text-slate-500 mb-1">Most frequent</div>
           <div className="text-lg font-bold text-slate-900">{mostFrequent?.name || '—'}</div>
         </div>
         <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
-          <div className="text-xs text-slate-500 mb-1">Сер. рівень довіри</div>
+          <div className="text-xs text-slate-500 mb-1">Avg. confidence</div>
           <div className="text-lg font-bold text-slate-900">{data ? `${Math.round(data.avgConfidence)}%` : '—'}</div>
         </div>
         <div className="border border-slate-200 rounded-lg p-3 bg-slate-50 text-center">
-          <div className="text-xs text-slate-500 mb-1">Критичні події</div>
+          <div className="text-xs text-slate-500 mb-1">Critical events</div>
           <div className="text-lg font-bold text-red-600">{data?.criticalCount || 0}</div>
         </div>
       </div>
 
       <div className="mb-8">
-        <h3 className="text-sm font-bold uppercase text-slate-700 mb-3 tracking-wider">Журнал інцидентів</h3>
+        <h3 className="text-sm font-bold uppercase text-slate-700 mb-3 tracking-wider">Incident log</h3>
         <table className="w-full text-left border-collapse text-xs">
           <thead>
             <tr className="bg-slate-900 text-white uppercase font-mono">
-              <th className="p-2 border border-slate-300">Дата / Час</th>
-              <th className="p-2 border border-slate-300">Тип загрози</th>
-              <th className="p-2 border border-slate-300">Координати</th>
-              <th className="p-2 border border-slate-300">Довіра</th>
-              <th className="p-2 border border-slate-300">Статус</th>
+              <th className="p-2 border border-slate-300">Date / Time</th>
+              <th className="p-2 border border-slate-300">Threat type</th>
+              <th className="p-2 border border-slate-300">Coordinates</th>
+              <th className="p-2 border border-slate-300">Confidence</th>
+              <th className="p-2 border border-slate-300">Status</th>
             </tr>
           </thead>
           <tbody className="font-mono divide-y divide-slate-200">
@@ -85,7 +85,7 @@ export function PrintableReport({ data, timeRange, mostFrequent }: any) {
             ))}
             {(!data?.history || data.history.length === 0) && (
               <tr>
-                <td colSpan={5} className="p-4 text-center text-slate-500">Немає записів за обраний період</td>
+                <td colSpan={5} className="p-4 text-center text-slate-500">No records for the selected period</td>
               </tr>
             )}
           </tbody>
@@ -93,7 +93,7 @@ export function PrintableReport({ data, timeRange, mostFrequent }: any) {
       </div>
 
       <div className="mt-16 pt-4 border-t border-slate-200 flex justify-between text-xs text-slate-500 font-mono">
-        <div>Звіт згенеровано автоматично</div>
+        <div>Report generated automatically</div>
       </div>
     </div>
   );

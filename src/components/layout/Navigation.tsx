@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { LockKeyhole, LogOut } from 'lucide-react';
-import { useNavigate, useLocation } from 'react-router-dom'; // 1. ІМПОРТУЄМО ХУКИ РОУТЕРА
+import { useNavigate, useLocation } from 'react-router-dom';
 import { NAV_ITEMS } from '../../constants/navItems';
 import { useAuth } from '../../hooks/useAuth';
 import { LoginModal } from '../auth/LoginModal';
 
-// 2. ПРОПСИ БІЛЬШЕ НЕ ПОТРІБНІ, РОУТЕР КЕРУЄ ВСІМ САМ
 export function Navigation() {
   const { isAdmin, user, logout } = useAuth();
   const [showLogin, setShowLogin] = useState(false);

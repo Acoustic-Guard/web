@@ -67,11 +67,11 @@ const STATUS_CONFIG: Record<StatusLevel, {
   bgColor: string;
   dotColor: string;
 }> = {
-  quiet:  { label: 'У вас тихо',         sub: 'Рівень шуму в нормі',          iconColor: 'text-emerald-400', borderColor: 'border-emerald-500/30', bgColor: 'bg-emerald-500/5',  dotColor: 'bg-emerald-400' },
-  normal: { label: 'Шум помірний',        sub: 'Прийнятний рівень для міста',  iconColor: 'text-blue-400',    borderColor: 'border-blue-500/30',    bgColor: 'bg-blue-500/5',    dotColor: 'bg-blue-400'    },
-  noisy:  { label: 'Помітний шум',        sub: 'Рекомендується увага',         iconColor: 'text-yellow-400',  borderColor: 'border-yellow-500/30',  bgColor: 'bg-yellow-500/5',  dotColor: 'bg-yellow-400'  },
-  loud:   { label: 'Гучно поруч',         sub: 'Підвищений рівень шуму',       iconColor: 'text-orange-400',  borderColor: 'border-orange-500/30',  bgColor: 'bg-orange-500/5',  dotColor: 'bg-orange-400'  },
-  danger: { label: 'Небезпечний шум',     sub: 'Рекомендується залишити район',iconColor: 'text-red-400',     borderColor: 'border-red-500/30',     bgColor: 'bg-red-500/5',     dotColor: 'bg-red-400'     },
+  quiet:  { label: 'Quiet environment',  sub: 'Noise level is normal',         iconColor: 'text-emerald-400', borderColor: 'border-emerald-500/30', bgColor: 'bg-emerald-500/5',  dotColor: 'bg-emerald-400' },
+  normal: { label: 'Moderate noise',     sub: 'Acceptable urban level',        iconColor: 'text-blue-400',    borderColor: 'border-blue-500/30',    bgColor: 'bg-blue-500/5',    dotColor: 'bg-blue-400'    },
+  noisy:  { label: 'Noticeable noise',   sub: 'Attention recommended',         iconColor: 'text-yellow-400',  borderColor: 'border-yellow-500/30',  bgColor: 'bg-yellow-500/5',  dotColor: 'bg-yellow-400'  },
+  loud:   { label: 'Loud nearby',        sub: 'Elevated noise level',          iconColor: 'text-orange-400',  borderColor: 'border-orange-500/30',  bgColor: 'bg-orange-500/5',  dotColor: 'bg-orange-400'  },
+  danger: { label: 'Dangerous noise',    sub: 'Recommended to leave area',     iconColor: 'text-red-400',     borderColor: 'border-red-500/30',     bgColor: 'bg-red-500/5',     dotColor: 'bg-red-400'     },
 };
 
 export function NoiseStatusPanel({ userLocation, noisePoints, locationPermission }: Props) {
@@ -89,9 +89,9 @@ export function NoiseStatusPanel({ userLocation, noisePoints, locationPermission
             <MapPin size={15} className="text-[#71717a]" />
           </div>
           <div>
-            <p className="text-white text-xs font-semibold mb-0.5">Локацію не знайдено</p>
+            <p className="text-white text-xs font-semibold mb-0.5">Location is not found</p>
             <p className="text-[#71717a] text-[10px] leading-relaxed">
-              Надайте доступ до геолокації щоб бачити рівень шуму у вашому районі
+              Allow location access to see the noise level in your area
             </p>
           </div>
         </div>
@@ -108,9 +108,9 @@ export function NoiseStatusPanel({ userLocation, noisePoints, locationPermission
             <MapPin size={15} className="text-[#71717a]" />
           </div>
           <div>
-            <p className="text-white text-xs font-semibold mb-0.5">Ваш район</p>
+            <p className="text-white text-xs font-semibold mb-0.5">Your area</p>
             <p className="text-[#71717a] text-[10px] leading-relaxed">
-              Натисніть <span className="text-white">⊕</span> щоб дізнатись рівень шуму поруч з вами
+              Click <span className="text-white">⊕</span> to check the noise level near you
             </p>
           </div>
         </div>
@@ -127,9 +127,9 @@ export function NoiseStatusPanel({ userLocation, noisePoints, locationPermission
             <VolumeX size={15} className="text-[#71717a]" />
           </div>
           <div>
-            <p className="text-white text-xs font-semibold mb-0.5">Даних немає</p>
+            <p className="text-white text-xs font-semibold mb-0.5">No data available</p>
             <p className="text-[#71717a] text-[10px] leading-relaxed">
-              Сенсори поблизу вас не виявлені або знаходяться поза зоною покриття
+              No sensors found nearby or out of coverage area
             </p>
           </div>
         </div>
@@ -159,7 +159,7 @@ export function NoiseStatusPanel({ userLocation, noisePoints, locationPermission
         </div>
         <div className="text-right flex-shrink-0">
           <p className={`text-sm font-mono font-semibold ${cfg.iconColor}`}>{Math.round(localDb)}</p>
-          <p className="text-[#71717a] text-[9px]">дБ</p>
+          <p className="text-[#71717a] text-[9px]">dB</p>
         </div>
       </div>
     </div>

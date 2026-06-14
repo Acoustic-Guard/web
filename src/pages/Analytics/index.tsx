@@ -29,7 +29,7 @@ export default function AnalyticsPage() {
    */
   const handleExportReport = () => {
     if (!data?.history || data.history.length === 0) {
-      alert("Немає даних для експорту");
+      alert("No data to export");
       return;
     }
     window.print();
@@ -78,7 +78,7 @@ export default function AnalyticsPage() {
   if (loading && !data) {
     return (
       <div className="flex-1 flex items-center justify-center bg-[#0a0a0f] text-[#71717a]">
-        <Loader2 className="animate-spin mr-2" /> Завантаження аналітики...
+        <Loader2 className="animate-spin mr-2" /> Loading analytics...
       </div>
     );
   }
@@ -108,9 +108,9 @@ export default function AnalyticsPage() {
 
             {showDatePicker && (
               <div className="flex items-center gap-2 bg-[#1a1a24] p-1 rounded-lg ml-2 border border-[#333]">
-                <input type="date" value={inputStart} onChange={(e) => setInputStart(e.target.value)} style={{ colorScheme: 'dark' }} className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer" />
+                <input type="date" lang="en-GB" value={inputStart} onChange={(e) => setInputStart(e.target.value)} style={{ colorScheme: 'dark' }} className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer" />
                 <span className="text-[#71717a]">-</span>
-                <input type="date" value={inputEnd} onChange={(e) => setInputEnd(e.target.value)} style={{ colorScheme: 'dark' }} className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer" />
+                <input type="date" lang="en-GB" value={inputEnd} onChange={(e) => setInputEnd(e.target.value)} style={{ colorScheme: 'dark' }} className="bg-transparent text-sm text-white px-2 outline-none cursor-pointer" />
                 <button onClick={handleCustomRangeApply} disabled={!inputStart || !inputEnd} className="px-3 py-1 bg-[#2563eb] text-white rounded text-sm disabled:opacity-50 hover:bg-[#1d4ed8] transition-colors">Go</button>
               </div>
             )}
@@ -138,7 +138,7 @@ export default function AnalyticsPage() {
             <div className="col-span-2 bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-4" style={{ minWidth: 0 }}>
               <h3 className="text-sm font-semibold text-white mb-4">Threat Frequency Over Time</h3>
               <div className="relative w-full h-[220px]">
-                {actualTimeSeries.length > 0 ? <Line data={lineChartData} options={lineChartOptions} /> : <div className="w-full h-full flex items-center justify-center text-[#71717a] text-sm">Немає даних</div>}
+                {actualTimeSeries.length > 0 ? <Line data={lineChartData} options={lineChartOptions} /> : <div className="w-full h-full flex items-center justify-center text-[#71717a] text-sm">No data</div>}
               </div>
             </div>
 
@@ -183,7 +183,7 @@ export default function AnalyticsPage() {
                       <td className="px-4 py-3 text-xs text-white">{Math.round(incident.intensity * 100)}%</td>
                       <td className="px-4 py-3"><span className={`text-xs font-semibold ${STATUS_COLORS[incident.status] || 'text-[#71717a]'}`}>{incident.status}</span></td>
                     </tr>
-                  )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-xs text-[#71717a]">Немає записаних інцидентів</td></tr>}
+                  )) : <tr><td colSpan={5} className="px-4 py-8 text-center text-xs text-[#71717a]">No recorded incidents</td></tr>}
                 </tbody>
               </table>
             </div>

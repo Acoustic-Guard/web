@@ -13,11 +13,11 @@ interface Props {
  * Кольори повністю синхронізовані з глобальною палітрою ThreatColors.ts.
  */
 const TYPE_CONFIG = {
-  UAV:       { icon: Wind,          label: 'БПЛА',    color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
-  Explosion: { icon: Zap,           label: 'Вибухи',  color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
-  Siren:     { icon: AlertTriangle, label: 'Сирени',  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
-  Generator: { icon: Radio,         label: 'Генер.',  color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' }, // 🟢 Виправлено на yellow
-  Truck:     { icon: Truck,         label: 'Вантаж.', color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
+  UAV:       { icon: Wind,          label: 'UAV',    color: 'text-purple-400', bg: 'bg-purple-500/10', border: 'border-purple-500/20' },
+  Explosion: { icon: Zap,           label: 'Exposion',  color: 'text-red-400',    bg: 'bg-red-500/10',    border: 'border-red-500/20'    },
+  Siren:     { icon: AlertTriangle, label: 'Siren',  color: 'text-amber-400',  bg: 'bg-amber-500/10',  border: 'border-amber-500/20'  },
+  Generator: { icon: Radio,         label: 'Generator',  color: 'text-yellow-400', bg: 'bg-yellow-500/10', border: 'border-yellow-500/20' },
+  Truck:     { icon: Truck,         label: 'Truck', color: 'text-blue-400',   bg: 'bg-blue-500/10',   border: 'border-blue-500/20'   },
 } as const;
 
 /**
@@ -52,7 +52,7 @@ export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
         <div className="flex items-center justify-between px-4 py-3 border-b border-[#1a1a24]">
           <div className="flex items-center gap-2">
             <Clock size={14} className="text-[#71717a]" />
-            <span className="text-xs font-semibold text-white">Активні інциденти</span>
+            <span className="text-xs font-semibold text-white">Active insidents</span>
           </div>
           <button
             onClick={onClose}
@@ -67,10 +67,10 @@ export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
           <div className="flex items-center gap-1.5 bg-[#1a1a24] rounded px-2.5 py-1">
             <div className="w-1.5 h-1.5 bg-red-500 rounded-full animate-pulse" />
             <span className="text-sm font-semibold text-white font-mono">{stats.total}</span>
-            <span className="text-[10px] text-[#71717a]">всього</span>
+            <span className="text-[10px] text-[#71717a]">total</span>
           </div>
           <span className="text-[10px] text-[#52525b]">
-            Впевненість: <span className="text-white font-mono">{stats.avgConfidence}%</span>
+            Confidence: <span className="text-white font-mono">{stats.avgConfidence}%</span>
           </span>
         </div>
 
@@ -93,7 +93,6 @@ export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
                     {count}
                   </span>
                 </div>
-                {/* 🟢 Смужка прогресу з правильними кольорами для всіх типів */}
                 <div className="h-0.5 w-full bg-[#1a1a24] rounded-full overflow-hidden">
                   <div
                     className={`h-full rounded-full transition-all duration-500 ${
@@ -101,6 +100,7 @@ export function IncidentStatsWidget({ incidents, isOpen, onClose }: Props) {
                       type === 'Explosion' ? 'bg-red-500' :
                       type === 'Siren' ? 'bg-amber-500' :
                       type === 'Generator' ? 'bg-yellow-500' :
+                      type === 'Truck' ? 'bg-blue-500' :
                       'bg-blue-500'
                     }`}
                     style={{ width: `${pct}%` }}

@@ -17,7 +17,7 @@ export function LayerControls({ activeLayer, setActiveLayer }: Props) {
         }`}
       >
         <Layers size={14} />
-        Теплова карта
+        Heatmap
       </button>
 
       <button
@@ -29,7 +29,7 @@ export function LayerControls({ activeLayer, setActiveLayer }: Props) {
         }`}
       >
         <Radio size={14} />
-        Карта шуму
+        Noise map
       </button>
     </div>
   );

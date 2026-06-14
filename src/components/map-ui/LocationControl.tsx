@@ -87,7 +87,7 @@ const handleGeoLocation = () => {
     if (!map) return;
 
     if (!navigator.geolocation) {
-      alert('Геолокація не підтримується вашим браузером');
+      alert('Geolocation is not supported by your browser.');
       return;
     }
 
@@ -109,9 +109,9 @@ const handleGeoLocation = () => {
           setPermissionState('denied');
           onLocationChange(null);
           onPermissionDenied?.();
-          alert('Будь ласка, дозвольте доступ до геолокації у налаштуваннях браузера.');
+          alert('Please allow location access in your browser settings.');
         } else {
-          alert('Не вдалося визначити ваше місцезнаходження.');
+          alert('Unable to determine your location.');
         }
       },
       { enableHighAccuracy: true, timeout: 5000, maximumAge: 0 }
@@ -122,7 +122,7 @@ const handleGeoLocation = () => {
     <button
       onClick={handleGeoLocation}
       disabled={isLocating || permissionState === 'denied'}
-      title={permissionState === 'denied' ? 'Доступ до геолокації заблоковано' : 'Моє місцезнаходження'}
+      title={permissionState === 'denied' ? 'Location access denied' : 'My location'}
       className="w-10 h-10 bg-[#1a1a24] hover:bg-[#2a2a34] text-white rounded-lg flex items-center justify-center transition-colors shadow-lg border border-[#2a2a35] disabled:opacity-50"
     >
       {isLocating ? (

@@ -13,8 +13,8 @@ export function ProtectedRoute({ children, requiredRole }: ProtectedRouteProps) 
     return (
       <div className="flex-1 flex items-center justify-center bg-[#0a0a0f]">
         <div className="text-center">
-          <p className="text-[#71717a] text-sm mb-1">Доступ заборонено</p>
-          <p className="text-[#52525b] text-xs">Увійдіть як оператор щоб переглянути цю сторінку</p>
+          <p className="text-[#71717a] text-sm mb-1">Access denied</p>
+          <p className="text-[#52525b] text-xs">Log in as an operator to view this page</p>
         </div>
       </div>
     );
