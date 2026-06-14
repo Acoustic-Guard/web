@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useState } from 'react';
-import { getStompClient } from '../../services/stompClient';
+import { ensureConnected, getStompClient } from '../../services/stompClient';
 import { fetchWithAuth, WS_TOPICS } from '../../config/api';
 import { Wifi, XCircle, Cpu, Database } from 'lucide-react';
 
@@ -39,6 +39,7 @@ const MOCK_SENSORS: SensorNode[] = [
 export default function NetworkPage() {
   const [sensors, setSensors] = useState<SensorNode[]>([]);
   const [loading, setLoading] = useState(true);
+  const [brokerStatus, setBrokerStatus] = useState<'Healthy' | 'Offline' | 'Connecting...'>('Connecting...');
 
   useEffect(() => {
     fetchWithAuth('/sensors')
@@ -68,19 +69,35 @@ export default function NetworkPage() {
   }, []);
 
   useEffect(() => {
-    const client = getStompClient();
-    if (!client?.connected) return;
+    let sub: any;
 
-    const sub = client.subscribe(WS_TOPICS.telemetry, (msg) => {
-      const update = JSON.parse(msg.body);
-      setSensors(prev => prev.map(s => s.id === update.id ? { ...s, ...update } : s));
-    });
+    ensureConnected()
+      .then(() => {
+        setBrokerStatus('Healthy');
+        
+        const client = getStompClient();
+        sub = client.subscribe(WS_TOPICS.telemetry, (msg) => {
+          const update = JSON.parse(msg.body);
+          setSensors(prev => prev.map(s => s.id === update.id ? { ...s, ...update } : s));
+        });
+      })
+      .catch((err) => {
+        console.error('Broker connection failed:', err);
+        setBrokerStatus('Offline');
+      });
 
-    return () => sub.unsubscribe();
+    return () => {
+      if (sub) sub.unsubscribe();
+    };
   }, []);
 
+  const totalNodes = sensors.length;
   const onlineNodes = sensors.filter(n => n.status === 'online').length;
   const offlineNodes = sensors.filter(n => n.status === 'offline').length;
+
+  const systemLoad = totalNodes > 0 
+    ? Math.round((onlineNodes / totalNodes) * 100) 
+    : 0;
 
   /**
    * Локалізує рядок формату ISO 8601 у зрозумілий для користувача формат часу.
@@ -116,8 +133,13 @@ export default function NetworkPage() {
         <div className="grid grid-cols-4 gap-4 mb-6">
           <StatCard title="Connected Nodes" value={onlineNodes} icon={Wifi} color="text-emerald-400" />
           <StatCard title="Offline Nodes" value={offlineNodes} icon={XCircle} color="text-red-400" />
-          <StatCard title="System Load" value="23%" icon={Cpu} color="text-white" />
-          <StatCard title="Broker Status" value="Healthy" icon={Database} color="text-emerald-400" />
+          <StatCard title="System Load" value={`${systemLoad}%`} icon={Cpu} color="text-white" />
+          <StatCard 
+  title="Broker Status" 
+  value={brokerStatus} 
+  icon={Database} 
+  color={brokerStatus === 'Healthy' ? "text-emerald-400" : brokerStatus === 'Connecting...' ? "text-yellow-400" : "text-red-400"} 
+/>
         </div>
 
         {/* Таблиця сенсорів */}

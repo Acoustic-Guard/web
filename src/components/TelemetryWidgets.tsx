@@ -50,19 +50,19 @@ export function TelemetryWidgets() {
 
   if (loading) return (
     <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-[#71717a]">
-      Завантаження телеметрії...
+      Loading telemetry...
     </div>
   );
 
   if (error) return (
     <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-red-400">
-      Помилка: {error}
+      Error: {error}
     </div>
   );
 
   if (!metrics || metrics.length === 0) return (
     <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-[#71717a]">
-      Немає даних телеметрії
+      No telemetry data
     </div>
   );
 
