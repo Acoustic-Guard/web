@@ -28,6 +28,7 @@ export const WS_TOPICS = {
   alerts:    '/topic/alerts',
   incidents: '/topic/incidents',
   telemetry: '/topic/telemetry',
+  sensors:   '/topic/sensors',
 } as const;
 
 /**

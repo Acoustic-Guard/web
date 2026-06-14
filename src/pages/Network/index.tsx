@@ -12,8 +12,8 @@ interface SensorNode {
   id: string;
   location: string;
   status: 'online' | 'offline' | 'warning';
-  latency: number;
-  uptime: string;
+  latencyMs: number;
+  uptimePercent?: string;
   lastHeartbeat: string;
 }
 
@@ -23,10 +23,10 @@ interface SensorNode {
  * у разі тимчасової недоступності бекенду або відсутності реальних даних.
  */
 const MOCK_SENSORS: SensorNode[] = [
-  { id: 'AG-NODE-001', location: 'Shevchenkivskyi', status: 'online', latency: 12, uptime: '99.9%', lastHeartbeat: new Date().toISOString() },
-  { id: 'AG-NODE-002', location: 'Obolon', status: 'warning', latency: 145, uptime: '98.5%', lastHeartbeat: new Date(Date.now() - 50000).toISOString() },
-  { id: 'AG-NODE-003', location: 'Podil', status: 'offline', latency: 0, uptime: '45.2%', lastHeartbeat: new Date(Date.now() - 3600000).toISOString() },
-  { id: 'AG-NODE-004', location: 'Pechersk', status: 'online', latency: 8, uptime: '99.9%', lastHeartbeat: new Date().toISOString() },
+  { id: 'AG-NODE-001', location: 'Shevchenkivskyi', status: 'online', latencyMs: 12, uptimePercent: '99.9%', lastHeartbeat: new Date().toISOString() },
+  { id: 'AG-NODE-002', location: 'Obolon', status: 'warning', latencyMs: 145, uptimePercent: '98.5%', lastHeartbeat: new Date(Date.now() - 50000).toISOString() },
+  { id: 'AG-NODE-003', location: 'Podil', status: 'offline', latencyMs: 0, uptimePercent: '45.2%', lastHeartbeat: new Date(Date.now() - 3600000).toISOString() },
+  { id: 'AG-NODE-004', location: 'Pechersk', status: 'online', latencyMs: 8, uptimePercent: '99.9%', lastHeartbeat: new Date().toISOString() },
 ];
 
 /**
@@ -76,7 +76,7 @@ export default function NetworkPage() {
         setBrokerStatus('Healthy');
         
         const client = getStompClient();
-        sub = client.subscribe(WS_TOPICS.telemetry, (msg) => {
+        sub = client.subscribe(WS_TOPICS.sensors, (msg) => {
           const update = JSON.parse(msg.body);
           setSensors(prev => prev.map(s => s.id === update.id ? { ...s, ...update } : s));
         });
@@ -162,7 +162,9 @@ export default function NetworkPage() {
                   <td className="px-4 py-3 text-left">
                     <StatusBadge status={node.status} />
                   </td>
-                  <td className="px-4 py-3 text-sm text-white">{node.latency} ms</td>
+                  <td className="px-4 py-3 text-sm text-white">
+                    {node.status === 'offline' ? '-' : `${node.latencyMs} ms`}
+                  </td>
                   <td className="px-4 py-3 text-sm text-[#71717a]">{formatTime(node.lastHeartbeat)}</td>
                 </tr>
               ))}
