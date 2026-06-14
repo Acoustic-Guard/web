@@ -1,4 +1,4 @@
-<img width="125" height="230" alt="image" src="https://github.com/user-attachments/assets/1d5d5207-fa81-42fb-968f-c04171a7d3af" /># Acoustic Guard — Інструкція оператора (Адмін)
+# Acoustic Guard — Інструкція оператора (Адмін)
 **Версія системи:** 1.0  
 **Аудиторія:** Оператори з правами адміністратора  
 **Останнє оновлення:** Червень 2026  
