@@ -10,7 +10,7 @@ export function MapLegend({ activeLayer }: Props) {
       {activeLayer !== 'noisemap' && (
         <div className="space-y-1.5">
           {[
-            { color: 'bg-orange-500',    label: 'БПЛА'        },
+            { color: 'bg-purple-500',    label: 'БПЛА'        },
             { color: 'bg-red-600',    label: 'Вибухи'       },
             { color: 'bg-amber-500',  label: 'Сирени'       },
             { color: 'bg-yellow-500', label: 'Генератори'   },
