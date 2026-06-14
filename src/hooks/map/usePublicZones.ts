@@ -3,6 +3,20 @@ import { useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import * as turf from '@turf/turf';
 
+// ============================================================================
+// ─── КОНФІГУРАЦІЯ КОЛЬОРІВ ──────────────────────────────────────────────────
+// ============================================================================
+const ZONE_COLORS: Record<string, string> = {
+  UAV:       '#a855f7', // purple-500
+  Explosion: '#ef4444', // red-500
+  Siren:     '#f59e0b', // amber-500
+  Generator: '#eab308', // yellow-500
+  Truck:     '#3b82f6', // blue-500
+};
+
+// ============================================================================
+// ─── ГОЛОВНИЙ ХУК ───────────────────────────────────────────────────────────
+// ============================================================================
 export function usePublicZones(mapRef: React.MutableRefObject<L.Map | null>, liveIncidents: any[], isAdmin: boolean, activeLayer: string) {
   const publicOverlaysRef = useRef<L.SVGOverlay[]>([]);
 
@@ -19,40 +33,53 @@ export function usePublicZones(mapRef: React.MutableRefObject<L.Map | null>, liv
     clearPublicOverlays();
 
     if (liveIncidents.length === 0) return;
-    const validPoints = liveIncidents
-      .filter((i: any) => (i.lat ?? i.latitude) != null && (i.lng ?? i.longitude) != null)
-      .map((i: any) => turf.point([i.lng ?? i.longitude, i.lat ?? i.latitude]));
 
-    if (validPoints.length === 0) return;
-    const pointsCollection = turf.featureCollection(validPoints);
+    const groupedPoints: Record<string, any[]> = {};
+    
+    liveIncidents.forEach((i: any) => {
+      if ((i.lat ?? i.latitude) != null && (i.lng ?? i.longitude) != null) {
+        const type = i.type || 'Explosion'; // Fallback на вибух
+        if (!groupedPoints[type]) groupedPoints[type] = [];
+        
+        groupedPoints[type].push(turf.point([i.lng ?? i.longitude, i.lat ?? i.latitude]));
+      }
+    });
 
-    try {
-      const outerBuffer = turf.buffer(pointsCollection, 2.0, { units: 'kilometers' });
-      const innerBuffer = turf.buffer(pointsCollection, 0.6, { units: 'kilometers' });
+    Object.entries(groupedPoints).forEach(([type, points]) => {
+      if (points.length === 0) return;
+      
+      const color = ZONE_COLORS[type] || '#ef4444';
+      const pointsCollection = turf.featureCollection(points);
 
-      if (!outerBuffer || !innerBuffer) return;
+      try {
+        const outerBuffer = turf.buffer(pointsCollection, 2.0, { units: 'kilometers' });
+        const innerBuffer = turf.buffer(pointsCollection, 0.6, { units: 'kilometers' });
 
-      const mergedOuter = turf.dissolve(outerBuffer as any);
-      const mergedInner = turf.dissolve(innerBuffer as any);
+        if (!outerBuffer || !innerBuffer) return;
 
-      const outerLayer = L.geoJSON(mergedOuter as any, {
-        style: {
-          color: 'transparent', fillColor: '#ef4444', fillOpacity: 0.15,
-          className: 'blur-[16px] pointer-events-none transition-all duration-700'
-        }
-      }).addTo(map);
+        const mergedOuter = turf.dissolve(outerBuffer as any);
+        const mergedInner = turf.dissolve(innerBuffer as any);
 
-      const innerLayer = L.geoJSON(mergedInner as any, {
-        style: {
-          color: '#ef4444', weight: 1, opacity: 0.3, fillColor: '#ef4444', fillOpacity: 0.35,
-          className: 'blur-[4px] pointer-events-none transition-all duration-700'
-        }
-      }).addTo(map);
+        const outerLayer = L.geoJSON(mergedOuter as any, {
+          style: {
+            color: 'transparent', fillColor: color, fillOpacity: 0.15,
+            className: 'blur-[16px] pointer-events-none transition-all duration-700'
+          }
+        }).addTo(map);
 
-      publicOverlaysRef.current.push(outerLayer as any, innerLayer as any);
-    } catch (error) {
-      console.error('Помилка генерації об\'єднаних зон радара:', error);
-    }
+        const innerLayer = L.geoJSON(mergedInner as any, {
+          style: {
+            color: color, weight: 1, opacity: 0.3, fillColor: color, fillOpacity: 0.35,
+            className: 'blur-[4px] pointer-events-none transition-all duration-700'
+          }
+        }).addTo(map);
+
+        publicOverlaysRef.current.push(outerLayer as any, innerLayer as any);
+      } catch (error) {
+        console.error(`Помилка генерації об'єднаних зон для ${type}:`, error);
+      }
+    });
+
   }, [liveIncidents, clearPublicOverlays, mapRef]);
 
   useEffect(() => {
