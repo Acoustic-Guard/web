@@ -15,11 +15,16 @@ interface UseIncidentStreamOptions {
 /**
  * Maintains active STOMP connection for listening to new incidents
  * (e.g., UAV detection or explosions) in real-time from the backend.
+ * Implements message batching to prevent UI freeze during high-frequency message floods.
  * @param options.onIncident - Callback for processing incoming incident DTO.
  */
 export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
   const onIncidentRef = useRef(onIncident);
   const { isOnline } = useConnection();
+  
+  // Buffer for incoming messages to prevent UI freeze
+  const messageBuffer = useRef<IncidentMarker[]>([]);
+  const flushIntervalRef = useRef<number | null>(null);
   
   useEffect(() => {
     onIncidentRef.current = onIncident;
@@ -46,7 +51,12 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
     const subscriptionRef = { current: null as any };
 
     if (!isOnline) {
-      // Cleanup subscription when offline
+      // Cleanup subscription and flush interval when offline
+      if (flushIntervalRef.current) {
+        clearInterval(flushIntervalRef.current);
+        flushIntervalRef.current = null;
+      }
+      messageBuffer.current = [];
       return () => {
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
@@ -55,13 +65,30 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
       };
     }
 
+    // Flush buffer every 300ms to prevent UI freeze
+    flushIntervalRef.current = window.setInterval(() => {
+      if (messageBuffer.current.length > 0) {
+        // Process buffered messages in batch
+        const incidentsToProcess = messageBuffer.current;
+        messageBuffer.current = [];
+        
+        // Keep only latest 200 incidents to prevent DOM bloat
+        incidentsToProcess.slice(-200).forEach(incident => {
+          onIncidentRef.current(incident);
+        });
+      }
+    }, 300);
+
     ensureConnected().then(() => {
       const client = getStompClient();
       console.log('[useIncidentStream] Connected to STOMP');
       
       subscriptionRef.current = client.subscribe(WS_TOPICS.incidents, (message) => {
         const raw: ApiIncident = JSON.parse(message.body);
-        onIncidentRef.current(mapApiIncident(raw));
+        const incident = mapApiIncident(raw);
+        
+        // Push to buffer instead of calling state setter directly
+        messageBuffer.current.push(incident);
       });
     }).catch((err) => {
       console.error('[useIncidentStream] Failed to connect:', err);
@@ -72,6 +99,11 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
+      if (flushIntervalRef.current) {
+        clearInterval(flushIntervalRef.current);
+        flushIntervalRef.current = null;
+      }
+      messageBuffer.current = [];
     };
   }, [isOnline]);
 }

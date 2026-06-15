@@ -16,12 +16,17 @@ interface UseAlertStreamOptions {
 /**
  * Hook for establishing and maintaining WebSocket (STOMP) connection for receiving
  * real-time alert stream. Automatically manages subscription and unsubscription
- * on component mount/unmount.
+ * on component mount/unmount. Implements message batching to prevent UI freeze
+ * during high-frequency message floods.
  * @param options.onAlert - Callback that is called when a new alert is received.
  */
 export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
   const onAlertRef = useRef(onAlert);
   const { isOnline } = useConnection();
+  
+  // Buffer for incoming messages to prevent UI freeze
+  const messageBuffer = useRef<Alert[]>([]);
+  const flushIntervalRef = useRef<number | null>(null);
   
   useEffect(() => {
     onAlertRef.current = onAlert;
@@ -48,7 +53,12 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
     const subscriptionRef = { current: null as any };
 
     if (!isOnline) {
-      // Cleanup subscription when offline
+      // Cleanup subscription and flush interval when offline
+      if (flushIntervalRef.current) {
+        clearInterval(flushIntervalRef.current);
+        flushIntervalRef.current = null;
+      }
+      messageBuffer.current = [];
       return () => {
         if (subscriptionRef.current) {
           subscriptionRef.current.unsubscribe();
@@ -57,13 +67,30 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
       };
     }
 
+    // Flush buffer every 300ms to prevent UI freeze
+    flushIntervalRef.current = window.setInterval(() => {
+      if (messageBuffer.current.length > 0) {
+        // Process buffered messages in batch
+        const alertsToProcess = messageBuffer.current;
+        messageBuffer.current = [];
+        
+        // Keep only latest 200 alerts to prevent DOM bloat
+        alertsToProcess.slice(-200).forEach(alert => {
+          onAlertRef.current(alert);
+        });
+      }
+    }, 300);
+
     ensureConnected().then(() => {
       const client = getStompClient();
       console.log('[useAlertStream] Connected to STOMP');
       
       subscriptionRef.current = client.subscribe(WS_TOPICS.alerts, (message) => {
         const raw: ApiAlert = JSON.parse(message.body);
-        onAlertRef.current(mapApiAlert(raw));
+        const alert = mapApiAlert(raw);
+        
+        // Push to buffer instead of calling state setter directly
+        messageBuffer.current.push(alert);
       });
     }).catch((err) => {
       console.error('[useAlertStream] Failed to connect:', err);
@@ -74,6 +101,11 @@ export function useAlertStream({ onAlert }: UseAlertStreamOptions) {
         subscriptionRef.current.unsubscribe();
         subscriptionRef.current = null;
       }
+      if (flushIntervalRef.current) {
+        clearInterval(flushIntervalRef.current);
+        flushIntervalRef.current = null;
+      }
+      messageBuffer.current = [];
     };
   }, [isOnline]);
 }
