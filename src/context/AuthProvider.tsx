@@ -4,12 +4,12 @@ import type { AuthUser, UserRole } from '../types/auth';
 import { loginRequest } from '../services/AuthService';
 
 /**
- * Компонент-провайдер для глобального стану авторизації.
- * Відповідає за:
- * 1. Ініціалізацію та персистенцію сесії з локального сховища (localStorage).
- * 2. Управління життєвим циклом JWT-токена.
- * 3. Глобальне перехоплення події 'auth:unauthorized' для автоматичного 
- * виходу з системи у разі закінчення терміну дії токена (401 Unauthorized).
+ * Provider component for global authorization state.
+ * Responsible for:
+ * 1. Initialization and persistence of session from local storage (localStorage).
+ * 2. JWT token lifecycle management.
+ * 3. Global interception of 'auth:unauthorized' event for automatic
+ * system logout when token expires (401 Unauthorized).
  */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(() => {
@@ -38,6 +38,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
       localStorage.setItem('username', data.username);
       localStorage.setItem('role', role);
+    } catch (error) {
+      // Re-throw error to be handled by the calling component (LoginModal)
+      throw error;
     } finally {
       setLoading(false);
     }

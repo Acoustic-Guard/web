@@ -22,6 +22,7 @@ export function LoginModal({ onClose }: LoginModalProps) {
       await login(username, password);
       onClose();
     } catch (err) {
+      // Error is now properly handled by AuthService with specific messages
       setError(err instanceof Error ? err.message : 'Login error');
     } finally {
       setLoading(false);

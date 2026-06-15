@@ -3,9 +3,9 @@ import type { AuthContextValue } from '../types/auth';
 import { AuthContext } from '../context/AuthContext';
 
 /**
- * Зручна обгортка над useContext для безпечного доступу до даних авторизації.
- * Забезпечує доступ до профілю користувача, його ролі та методів управління сесією.
- * @throws {Error} Якщо використовується поза межами AuthProvider.
+ * Convenient wrapper over useContext for safe access to authorization data.
+ * Provides access to user profile, role, and session management methods.
+ * @throws {Error} If used outside of AuthProvider.
  */
 export function useAuth(): AuthContextValue {
   const ctx = useContext(AuthContext);

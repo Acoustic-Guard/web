@@ -1,17 +1,18 @@
 import { useAlerts } from '../hooks/useAlerts';
-import { THREAT_BADGE_COLORS, getConfidenceColor } from '../constants/ThreatColors';
+import { THREAT_BADGE_COLORS, getConfidenceColor, getThreatLabel } from '../constants/ThreatColors';
 import type { AlertCardProps } from '../types/incidents';
+import { RefreshCw } from 'lucide-react';
 
 /**
- * Компонент карточки окремого сповіщення (Alert).
- * Відображає тип загрози, рівень впевненості алгоритму, локацію та час.
+ * Component for displaying a single alert card.
+ * Shows threat type, confidence level, location, and timestamp.
  */
 function AlertCard({ alert }: AlertCardProps) {
   return (
     <div className="bg-[#0f0f17] border border-[#1a1a24] rounded-lg p-3 hover:border-[#2a2a34] transition-colors">
       <div className="flex items-start justify-between mb-2">
         <span className={`px-2 py-1 rounded text-xs font-semibold border ${THREAT_BADGE_COLORS[alert.type]}`}>
-          {alert.type}
+          {getThreatLabel(alert.type)}
         </span>
         <span className={`text-xs font-semibold ${getConfidenceColor(alert.confidence)}`}>
           {Math.round(alert.confidence * 100)}%
@@ -24,8 +25,8 @@ function AlertCard({ alert }: AlertCardProps) {
 }
 
 /**
- * Бічна панель "Alert Feed".
- * Підписується на потік сповіщень у реальному часі та виводить їх списком.
+ * Alert Feed sidebar component.
+ * Subscribes to real-time alert stream and displays them in a list.
  */
 export function AlertFeed() {
   const { alerts, loading, error } = useAlerts();
@@ -45,12 +46,23 @@ export function AlertFeed() {
 
       <div className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading && (
-          <p className="text-xs text-[#71717a] text-center pt-4">Завантаження...</p>
+          <div className="flex flex-col items-center justify-center pt-8 text-[#71717a]">
+            <RefreshCw className="animate-spin mb-2" size={20} />
+            <p className="text-xs">Loading alerts...</p>
+          </div>
         )}
         {error && (
-          <p className="text-xs text-red-400 text-center pt-4">Помилка: {error}</p>
+          <div className="flex flex-col items-center justify-center pt-8 text-red-400">
+            <p className="text-xs mb-2">Connection error</p>
+            <p className="text-xs text-[#71717a]">Retrying...</p>
+          </div>
         )}
-        {!loading && !error && alerts.map((alert) => (
+        {!loading && !error && alerts.length === 0 && (
+          <div className="flex flex-col items-center justify-center pt-8 text-[#71717a]">
+            <p className="text-xs">No active alerts</p>
+          </div>
+        )}
+        {!loading && !error && alerts.length > 0 && alerts.map((alert) => (
           <AlertCard key={alert.id} alert={alert} />
         ))}
       </div>

@@ -1,6 +1,26 @@
 import type { Alert } from '../types/incidents';
 import type { IncidentMarker } from '../types/incidents';
 
+/**
+ * Maps threat type codes to user-friendly English labels.
+ */
+export const THREAT_LABELS: Record<string, string> = {
+  UAV: 'Drone',
+  Explosion: 'Explosion',
+  Siren: 'Siren',
+  Generator: 'Generator',
+  Truck: 'Heavy Vehicle',
+};
+
+/**
+ * Gets the user-friendly label for a threat type.
+ * @param type - The threat type code (e.g., 'UAV', 'EXPLOSION').
+ * @returns User-friendly English label.
+ */
+export function getThreatLabel(type: string): string {
+  return THREAT_LABELS[type] || type;
+}
+
 // Tailwind CSS класи для бейджів у AlertFeed
 export const THREAT_BADGE_COLORS: Record<Alert['type'], string> = {
   UAV:       'bg-purple-500/10 text-purple-400 border-purple-500/20',

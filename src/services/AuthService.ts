@@ -5,36 +5,52 @@ import type { AuthUser } from '../types/auth';
 const IS_MOCK = false;
 
 /**
- * Виконує автентифікацію користувача через API.
- * @param username - Логін користувача.
- * @param password - Пароль.
- * @returns Дані користувача включно з JWT токеном для подальших запитів.
- * @throws {Error} Якщо логін або пароль невірні.
+ * Performs user authentication via API.
+ * @param username - User login.
+ * @param password - User password.
+ * @returns User data including JWT token for subsequent requests.
+ * @throws {Error} If login or password is invalid, or server is unavailable.
  */
 export async function loginRequest(username: string, password: string): Promise<AuthUser & { token?: string }> {
   if (IS_MOCK) {
-    console.log('Використовується мокова авторизація...');
+    console.log('Using mock authentication...');
     await new Promise((r) => setTimeout(r, 500));
 
     if (username === MOCK_CREDENTIALS.username && password === MOCK_CREDENTIALS.password) {
       return { role: 'ADMIN', username, token: 'mock-jwt-token-123' }; 
     }
-    throw new Error('Невірний логін або пароль');
+    throw new Error('Invalid username or password');
   }
 
-  const res = await fetch(`${API_CONFIG.BASE_URL}${ENDPOINTS.auth}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password }),
-  });
+  try {
+    const res = await fetch(`${API_CONFIG.BASE_URL}${ENDPOINTS.auth}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ username, password }),
+    });
 
-  if (!res.ok) throw new Error('Невірний логін або пароль');
+    if (res.status === 401 || res.status === 403) {
+      throw new Error('Invalid username or password');
+    }
 
-  return await res.json(); 
+    if (!res.ok) {
+      throw new Error('Server error');
+    }
+
+    return await res.json();
+  } catch (error) {
+    // Check for network-level errors (TypeError from fetch)
+    if (error instanceof TypeError && error.message.includes('fetch')) {
+      throw new Error('Server is currently unavailable. Please try again later.');
+    }
+    
+    // Re-throw specific auth errors
+    throw error;
+  }
 }
 
 /**
- * Завершує сесію користувача.
+ * Terminates user session.
  */
 export function logoutRequest(): void {
 }

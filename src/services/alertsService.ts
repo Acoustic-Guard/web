@@ -1,4 +1,4 @@
-import { fetchWithAuth, ENDPOINTS } from '../config/api';
+import { fetchWithRetry, ENDPOINTS } from '../config/api';
 import { alerts } from '../mocks/incidentsMock';
 import { mapApiAlert, type ApiAlert } from '../types/api';
 import type { Alert } from '../types/incidents';
@@ -16,7 +16,7 @@ export async function getAlerts(): Promise<Alert[]> {
     return alerts;
   }
 
-  const res = await fetchWithAuth(ENDPOINTS.alerts);
+  const res = await fetchWithRetry(ENDPOINTS.alerts);
   if (!res.ok) throw new Error(`Alerts fetch failed: ${res.status}`);
 
   const data: ApiAlert[] = await res.json();

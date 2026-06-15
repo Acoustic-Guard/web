@@ -2,8 +2,8 @@ import { createContext } from 'react';
 import type { AuthContextValue } from '../types/auth';
 
 /**
- * Глобальний контекст для управління станом авторизації в React-застосунку.
- * Забезпечує типізований доступ до даних користувача та методів сесії 
- * через механізм React Context API, уникаючи prop-drilling.
+ * Global context for managing authorization state in React application.
+ * Provides typed access to user data and session methods
+ * through React Context API, avoiding prop-drilling.
  */
 export const AuthContext = createContext<AuthContextValue | null>(null);

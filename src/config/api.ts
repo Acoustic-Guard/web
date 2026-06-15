@@ -63,3 +63,56 @@ export async function fetchWithAuth(endpoint: string, options: RequestInit = {})
 
   return response;
 }
+
+/**
+ * Виконує HTTP-запит з автоматичним повторенням при помилках мережі або серверних помилках (502/503).
+ * Використовує експоненціальне відкладення між спробами.
+ * @param endpoint - Цільовий маршрут API.
+ * @param options - Стандартні параметри конфігурації fetch.
+ * @param maxRetries - Максимальна кількість спроб повторення (за замовчуванням 3).
+ * @returns Promise з об'єктом Response.
+ */
+export async function fetchWithRetry(
+  endpoint: string, 
+  options: RequestInit = {}, 
+  maxRetries: number = 3
+): Promise<Response> {
+  let lastError: Error | null = null;
+  const INITIAL_DELAY = 1000; // 1 second
+  const MAX_DELAY = 10000; // 10 seconds
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      const response = await fetchWithAuth(endpoint, options);
+      
+      // Check if response is successful
+      if (response.ok) {
+        return response;
+      }
+      
+      // Don't retry on client errors (4xx) except 408 Request Timeout
+      if (response.status >= 400 && response.status < 500 && response.status !== 408) {
+        return response;
+      }
+      
+      // Retry on server errors (5xx) and network errors
+      if (attempt < maxRetries) {
+        const delay = Math.min(INITIAL_DELAY * Math.pow(2, attempt), MAX_DELAY);
+        console.warn(`[API] Request failed with status ${response.status}, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    } catch (error) {
+      lastError = error as Error;
+      
+      // Retry on network errors
+      if (attempt < maxRetries) {
+        const delay = Math.min(INITIAL_DELAY * Math.pow(2, attempt), MAX_DELAY);
+        console.warn(`[API] Network error, retrying in ${delay}ms... (attempt ${attempt + 1}/${maxRetries})`, error);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+  }
+  
+  // All retries failed, throw the last error
+  throw lastError || new Error('Max retries exceeded');
+}

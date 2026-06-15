@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { API_CONFIG, ENDPOINTS } from '../config/api';
+import { fetchWithRetry, ENDPOINTS } from '../config/api';
 
 export interface NoisePoint {
   latitude: number;
@@ -36,9 +36,7 @@ export function useNoiseMap(): UseNoiseMapResult {
       setLoading(true);
       setError(null);
       try {
-        const response = await fetch(
-          `${API_CONFIG.BASE_URL}${ENDPOINTS.noiseMap}`
-        );
+        const response = await fetchWithRetry(ENDPOINTS.noiseMap);
         if (!response.ok) {
           throw new Error(`HTTP ${response.status}`);
         }

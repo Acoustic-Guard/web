@@ -19,8 +19,8 @@ const STATUS_VALUE: Record<Status, string> = {
 };
 
 /**
- * Картка окремої системної метрики (наприклад, Заряд батареї або Сигнал).
- * Змінює колір індикатора залежно від статусу (normal, warning, critical).
+ * Individual system metric card (e.g., Battery Charge or Signal).
+ * Changes indicator color based on status (normal, warning, critical).
  */
 function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardProps) {
   const displayValue = value ?? 0;
@@ -42,8 +42,8 @@ function MetricCard({ icon, label, value, unit, status = 'normal' }: MetricCardP
 }
 
 /**
- * Віджет системної телеметрії (Верхня панель дашборду).
- * Отримує дані стану обладнання та відображає їх у вигляді сітки карток (MetricCard).
+ * System telemetry widget (Top dashboard panel).
+ * Fetches hardware status data and displays it as a grid of metric cards.
  */
 export function TelemetryWidgets() {
   const { metrics, loading, error } = useTelemetry();
@@ -55,8 +55,8 @@ export function TelemetryWidgets() {
   );
 
   if (error) return (
-    <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-red-400">
-      Error: {error}
+    <div className="px-6 py-4 border-b border-[#1a1a24] text-xs text-[#71717a]">
+      Telemetry offline
     </div>
   );
 
