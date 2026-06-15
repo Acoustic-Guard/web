@@ -41,7 +41,7 @@ export function dbToOpacity(db: number): number {
 export function idwInterpolate(
   hexCenterLng: number,
   hexCenterLat: number,
-  noisePoints: { latitude: number; longitude: number; db: number }[],
+  noisePoints: { latitude: number; longitude: number; db: number, type?: string }[],
   influenceRadiusKm = 2.5,
   p = 2,
   baseDb = 38
@@ -57,6 +57,31 @@ export function idwInterpolate(
       turf.point([pt.longitude, pt.latitude]),
       { units: 'kilometers' }
     );
+
+    if (pt.type) {
+      switch (pt.type.toUpperCase()) {
+        case 'EXPLOSION':
+          influenceRadiusKm = 8.0;
+          p = 1.5;
+          break;
+        case 'SIREN':
+          influenceRadiusKm = 3.0;
+          p = 2.0;
+          break;
+        case 'UAV':
+          influenceRadiusKm = 4.0;
+          p = 2.0;
+          break;
+        case 'TRUCK':
+          influenceRadiusKm = 1.5;
+          p = 2.5;
+          break;
+        case 'GENERATOR':
+          influenceRadiusKm = 0.5;
+          p = 3.5;
+          break;
+      }
+    }
 
     if (distKm > influenceRadiusKm) continue;
 
