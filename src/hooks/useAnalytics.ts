@@ -1,12 +1,12 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { getAnalytics, type AnalyticsData } from '../services/analyticsService';
 import { THREAT_COLORS } from '../constants/analyticsUtils';
+import { useConnection } from '../context/ConnectionContext';
 
 /**
- * Кастомний хук для отримання та агрегації аналітичних даних.
- * Реалізує механізм періодичного опитування (polling) бекенду для підтримки 
- * актуальності метрик, а також керує станом фільтрів часових діапазонів.
- * Використовує useMemo для оптимізації обчислень розподілу загроз.
+ * Custom hook for fetching and aggregating analytics data.
+ * Implements polling mechanism to keep metrics current, and manages
+ * time range filter state. Uses useMemo for optimizing threat distribution calculations.
  */
 export function useAnalytics() {
   const [timeRange, setTimeRange] = useState('24h');
@@ -19,6 +19,10 @@ export function useAnalytics() {
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [inputStart, setInputStart] = useState('');
   const [inputEnd, setInputEnd] = useState('');
+
+  const { isOnline } = useConnection();
+  const previousIsOnline = useRef(true);
+  const isInitialMount = useRef(true);
 
   useEffect(() => {
     const fetchAnalyticsData = (isInitial = false) => {
@@ -40,6 +44,27 @@ export function useAnalytics() {
 
     return () => clearInterval(intervalId);
   }, [timeRange, appliedStart, appliedEnd]);
+
+  // Rehydrate data when connection is restored (false -> true transition)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!previousIsOnline.current && isOnline) {
+      console.log('Connection restored, rehydrating analytics data');
+      setLoading(true);
+      getAnalytics(timeRange, appliedStart, appliedEnd)
+        .then(setData)
+        .catch((err) => console.error('Analytics load error:', err))
+        .finally(() => {
+          setLoading(false);
+        });
+    }
+
+    previousIsOnline.current = isOnline;
+  }, [isOnline, timeRange, appliedStart, appliedEnd]);
 
   const handleStandardRangeChange = (range: string) => {
     setShowDatePicker(false);

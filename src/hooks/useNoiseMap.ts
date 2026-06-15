@@ -1,5 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { fetchWithRetry, ENDPOINTS } from '../config/api';
+import { useConnection } from '../context/ConnectionContext';
 
 export interface NoisePoint {
   latitude: number;
@@ -17,15 +18,18 @@ interface UseNoiseMapResult {
 const REFRESH_INTERVAL_MS = 30_000;
 
 /**
- * Хук для завантаження акустичної телеметрії (рівнів шуму в децибелах) 
- * з подальшою передачею в шар візуалізації мапи. Реалізує періодичне оновлення 
- * даних (кожні 30 секунд) через механізм polling.
+ * Hook for loading acoustic telemetry (noise levels in decibels)
+ * with subsequent transmission to the map visualization layer. Implements periodic data
+ * updates (every 30 seconds) via polling mechanism.
  */
 export function useNoiseMap(): UseNoiseMapResult {
   const [points, setPoints]   = useState<NoisePoint[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError]     = useState<string | null>(null);
   const [tick, setTick]       = useState(0);
+  const { isOnline } = useConnection();
+  const previousIsOnline = useRef(true);
+  const isInitialMount = useRef(true);
 
   const refresh = useCallback(() => setTick((t) => t + 1), []);
 
@@ -60,6 +64,21 @@ export function useNoiseMap(): UseNoiseMapResult {
       clearInterval(timer);
     };
   }, [tick]);
+
+  // Rehydrate data when connection is restored (false -> true transition)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!previousIsOnline.current && isOnline) {
+      console.log('Connection restored, rehydrating noise map data');
+      refresh();
+    }
+
+    previousIsOnline.current = isOnline;
+  }, [isOnline, refresh]);
 
   return { points, loading, error, refresh };
 }

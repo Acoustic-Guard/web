@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ensureConnected, getStompClient } from '../../services/stompClient';
 import { fetchWithRetry, WS_TOPICS } from '../../config/api';
+import { useConnection } from '../../context/ConnectionContext';
 import { Wifi, XCircle, Cpu, Database, RefreshCw } from 'lucide-react';
 
 /**
@@ -30,8 +31,13 @@ export default function NetworkPage() {
   const [error, setError] = useState<string | null>(null);
   const [brokerStatus, setBrokerStatus] = useState<'Healthy' | 'Offline' | 'Reconnecting...' | 'Connecting...'>('Connecting...');
   const [eventsPerMinute, setEventsPerMinute] = useState(0);
+  const { isOnline } = useConnection();
+  const previousIsOnline = useRef(true);
+  const isInitialMount = useRef(true);
 
-  useEffect(() => {
+  const fetchSensors = () => {
+    setLoading(true);
+    setError(null);
     fetchWithRetry('/sensors')
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
@@ -56,11 +62,42 @@ export default function NetworkPage() {
       .finally(() => {
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchSensors();
   }, []);
+
+  // Rehydrate data when connection is restored (false -> true transition)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!previousIsOnline.current && isOnline) {
+      console.log('Connection restored, rehydrating sensor data with 2500ms delay');
+      const timer = setTimeout(() => {
+        fetchSensors();
+      }, 2500);
+
+      return () => clearTimeout(timer);
+    }
+
+    previousIsOnline.current = isOnline;
+  }, [isOnline]);
 
   useEffect(() => {
     let sub: any;
     let telemetrySub: any;
+
+    if (!isOnline) {
+      // Cleanup subscriptions when offline
+      return () => {
+        if (sub) sub.unsubscribe();
+        if (telemetrySub) telemetrySub.unsubscribe();
+      };
+    }
 
     ensureConnected()
       .then(() => {
@@ -91,7 +128,7 @@ export default function NetworkPage() {
       if (sub) sub.unsubscribe();
       if (telemetrySub) telemetrySub.unsubscribe();
     };
-  }, []);
+  }, [isOnline]);
 
   const onlineNodes = sensors.filter(n => n.status === 'online').length;
   const offlineNodes = sensors.filter(n => n.status === 'offline').length;

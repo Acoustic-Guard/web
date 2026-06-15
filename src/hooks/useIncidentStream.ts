@@ -4,6 +4,7 @@ import { mapApiIncident, type ApiIncident } from '../types/api';
 import { WS_TOPICS } from '../config/api';
 import { ensureConnected, getStompClient } from '../services/stompClient';
 import type { IncidentMarker } from '../types/incidents';
+import { useConnection } from '../context/ConnectionContext';
 
 const IS_MOCK = import.meta.env.VITE_USE_MOCK === 'true';
 
@@ -12,12 +13,13 @@ interface UseIncidentStreamOptions {
 }
 
 /**
- * Підтримує активне STOMP-з'єднання для прослуховування нових інцидентів 
- * (наприклад, виявлення БПЛА чи вибухів) у реальному часі від бекенду.
- * * @param options.onIncident - Коллбек для обробки вхідного DTO інциденту.
+ * Maintains active STOMP connection for listening to new incidents
+ * (e.g., UAV detection or explosions) in real-time from the backend.
+ * @param options.onIncident - Callback for processing incoming incident DTO.
  */
 export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
   const onIncidentRef = useRef(onIncident);
+  const { isOnline } = useConnection();
   
   useEffect(() => {
     onIncidentRef.current = onIncident;
@@ -43,6 +45,16 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
 
     const subscriptionRef = { current: null as any };
 
+    if (!isOnline) {
+      // Cleanup subscription when offline
+      return () => {
+        if (subscriptionRef.current) {
+          subscriptionRef.current.unsubscribe();
+          subscriptionRef.current = null;
+        }
+      };
+    }
+
     ensureConnected().then(() => {
       const client = getStompClient();
       console.log('[useIncidentStream] Connected to STOMP');
@@ -61,5 +73,5 @@ export function useIncidentStream({ onIncident }: UseIncidentStreamOptions) {
         subscriptionRef.current = null;
       }
     };
-  }, []);
+  }, [isOnline]);
 }

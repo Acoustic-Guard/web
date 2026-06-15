@@ -1,8 +1,9 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { getAlerts } from '../services/alertsService';
 import type { Alert } from '../types/incidents';
 import { useAlertStream } from './useAlertStream';
 import { useAuth } from './useAuth';
+import { useConnection } from '../context/ConnectionContext';
 
 interface UseAlertsResult {
   alerts:  Alert[];
@@ -13,18 +14,21 @@ interface UseAlertsResult {
 const MAX_ALERTS = 100;
 
 /**
- * Кастомний хук для управління станом оперативних попереджень.
- * Відповідає за початкове завантаження історичних даних через REST API 
- * та автоматичне оновлення списку при надходженні нових подій через WebSocket.
- * * @returns Об'єкт зі списком попереджень, станом завантаження та можливими помилками.
+ * Custom hook for managing alert state.
+ * Responsible for initial loading of historical data via REST API
+ * and automatic list updates when new events arrive via WebSocket.
+ * @returns Object with alert list, loading state, and possible errors.
  */
 export function useAlerts(): UseAlertsResult {
   const { user } = useAuth();
   const [alerts, setAlerts]   = useState<Alert[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError]     = useState<string | null>(null);
+  const { isOnline } = useConnection();
+  const previousIsOnline = useRef(true);
+  const isInitialMount = useRef(true);
 
-  useEffect(() => {
+  const fetchAlerts = () => {
     let cancelled = false;
 
     Promise.resolve().then(() => {
@@ -42,7 +46,26 @@ export function useAlerts(): UseAlertsResult {
       .finally(() => { if (!cancelled) setLoading(false); });
 
     return () => { cancelled = true; };
+  };
+
+  useEffect(() => {
+    fetchAlerts();
   }, [user]);
+
+  // Rehydrate data when connection is restored (false -> true transition)
+  useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    if (!previousIsOnline.current && isOnline) {
+      console.log('Connection restored, rehydrating alerts data');
+      fetchAlerts();
+    }
+
+    previousIsOnline.current = isOnline;
+  }, [isOnline]);
 
   const handleNewAlert = useCallback((alert: Alert) => {
     setAlerts((prev) => {
